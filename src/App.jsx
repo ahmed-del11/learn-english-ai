@@ -83,6 +83,9 @@ function reducer(state, action) {
         case 'RESET_WORDS':
             newState.words = INITIAL_WORDS;
             break;
+        case 'CLEAR_ALL_WORDS':
+            newState.words = [];
+            break;
         case 'ADD_SENTENCES':
             const maxSId = state.sentences.length > 0 ? Math.max(...state.sentences.map(s => s.id)) : 0;
             const sentencesToAdd = action.payload.map((s, index) => ({

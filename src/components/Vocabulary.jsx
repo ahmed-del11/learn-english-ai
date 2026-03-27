@@ -16,7 +16,11 @@ export default function Vocabulary({ state, dispatch }) {
     // AI Generator State
     const [aiTopic, setAiTopic] = useState('');
     const [isGeneratingAI, setIsGeneratingAI] = useState(false);
-    const [generatingLevel, setGeneratingLevel] = useState(null); // tracking level packs
+    const [generatingLevel, setGeneratingLevel] = useState(null);
+
+    // Manual single-word lookup State
+    const [singleWord, setSingleWord] = useState('');
+    const [isLookingUp, setIsLookingUp] = useState(false);
 
     // Search and Filter State
     const [searchTerm, setSearchTerm] = useState('');
@@ -79,6 +83,56 @@ Ensure they follow the requested JSON schema exactly.`;
             alert(isAr ? 'فشل توليد الكلمات. يرجى المحاولة مرة أخرى.' : 'Failed to generate words. Please try again.');
         } finally {
             setIsGeneratingAI(false);
+        }
+    };
+
+    // Enrich a single user-typed word with AI (same schema as batch generation)
+    const handleAddSingleWord = async () => {
+        const word = singleWord.trim();
+        if (!word) return;
+
+        const alreadyExists = state.words.some(w => w.english.toLowerCase() === word.toLowerCase());
+        if (alreadyExists) {
+            alert(isAr ? `كلمة "${word}" موجودة بالفعل في قاموسك!` : `"${word}" is already in your dictionary!`);
+            return;
+        }
+
+        setIsLookingUp(true);
+        try {
+            const prompt = `For the English word "${word}", provide:
+1. The correct lowercase English spelling
+2. Arabic translation
+3. IPA Phonetic spelling
+4. A relevant single emoji
+5. A simple example sentence in English
+6. The Arabic translation of that example sentence.
+Return as a JSON object with keys: english, arabic, phonetic, emoji, example_en, example_ar`;
+
+            const schema = {
+                type: 'OBJECT',
+                properties: {
+                    english:    { type: 'STRING' },
+                    arabic:     { type: 'STRING' },
+                    phonetic:   { type: 'STRING' },
+                    emoji:      { type: 'STRING' },
+                    example_en: { type: 'STRING' },
+                    example_ar: { type: 'STRING' },
+                },
+                required: ['english', 'arabic', 'phonetic', 'emoji', 'example_en', 'example_ar'],
+            };
+
+            const result = await callAI(prompt, 'You are an expert English-Arabic dictionary.', true, schema);
+
+            if (result && result.english) {
+                dispatch({ type: 'ADD_WORDS', payload: [result], level: 'Custom' });
+                setSingleWord('');
+            } else {
+                throw new Error('Invalid response');
+            }
+        } catch {
+            alert(isAr ? 'تعذر البحث عن الكلمة. تأكد من الإملاء وحاول مرة أخرى.' : 'Could not look up that word. Check spelling and try again.');
+        } finally {
+            setIsLookingUp(false);
         }
     };
 
@@ -197,15 +251,52 @@ Ensure they follow the requested JSON schema exactly.`;
                                 }
                             }}
                             className="bg-white/20 hover:bg-white/30 p-1.5 rounded-lg transition-colors group relative"
-                            title={isAr ? 'إعادة ضبط القاموس' : 'Reset Dictionary'}
+                            title={isAr ? 'إعادة ضبط القاموس (يرجع الكلمات الأصلية)' : 'Reset to default words'}
                         >
                             <Icons.RefreshCw className="w-4 h-4 group-hover:rotate-180 transition-transform duration-500" />
+                        </button>
+                        <button 
+                            onClick={() => {
+                                if (window.confirm(isAr ? '⚠️ هذا سيحذف كل الكلمات تماماً! هل أنت متأكد؟' : '⚠️ This will delete ALL words including defaults! Are you sure?')) {
+                                    dispatch({ type: 'CLEAR_ALL_WORDS' });
+                                }
+                            }}
+                            className="bg-rose-500/30 hover:bg-rose-500/50 p-1.5 rounded-lg transition-colors"
+                            title={isAr ? 'حذف كل الكلمات' : 'Delete all words'}
+                        >
+                            <Icons.Trash className="w-4 h-4" />
                         </button>
                     </div>
                 </div>
                 <button onClick={startSession} className="relative z-10 bg-white text-indigo-600 px-6 py-3 rounded-xl font-bold hover:shadow-lg transition-all hover:scale-105">
                     {t('startSession')}
                 </button>
+            </div>
+
+            {/* Manual Word Lookup */}
+            <div className="flex items-center gap-3 p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 dark:border-emerald-500/20">
+                <span className="text-2xl">🔍</span>
+                <div className="flex-1 flex gap-2">
+                    <input
+                        type="text"
+                        value={singleWord}
+                        onChange={e => setSingleWord(e.target.value)}
+                        onKeyDown={e => e.key === 'Enter' && handleAddSingleWord()}
+                        placeholder={isAr ? 'اكتب كلمة بالإنجليزي والـ AI يكملها...' : 'Type a word and AI will enrich it...'}
+                        disabled={isLookingUp}
+                        className="flex-1 px-4 py-2.5 rounded-xl bg-white dark:bg-slate-800 border border-emerald-300 dark:border-emerald-700 focus:border-emerald-500 outline-none transition-all text-sm disabled:opacity-50"
+                    />
+                    <button
+                        onClick={handleAddSingleWord}
+                        disabled={isLookingUp || !singleWord.trim()}
+                        className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-semibold text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-emerald-500/30"
+                    >
+                        {isLookingUp
+                            ? <><Icons.Loader className="w-4 h-4 animate-spin" /> {isAr ? 'جاري...' : 'Loading...'}</>
+                            : <><Icons.Sparkles className="w-4 h-4" /> {isAr ? 'أضف' : 'Add'}</>
+                        }
+                    </button>
+                </div>
             </div>
 
             {/* Search and Filters */}
