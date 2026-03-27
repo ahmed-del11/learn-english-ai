@@ -259,7 +259,15 @@ export default function App() {
                         <Icons.Globe className="w-8 h-8" />
                         <span className="hidden md:block">{t('appName')}</span>
                     </div>
-                    <div className="flex md:w-full gap-2">
+                    <div className="flex md:w-full gap-2 items-center">
+                        {state.user && (
+                            <button 
+                                onClick={() => dispatch({ type: 'SET_TAB', payload: 'profile' })}
+                                className={`md:hidden p-0.5 rounded-xl border-2 transition-all ${state.activeTab === 'profile' ? 'border-indigo-500 ring-4 ring-indigo-500/10' : 'border-transparent'}`}
+                            >
+                                <img src={state.user.picture} alt="" className="w-8 h-8 rounded-lg object-cover" />
+                            </button>
+                        )}
                         <button onClick={() => dispatch({ type: 'TOGGLE_LANG' })} className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 font-bold text-sm w-10 h-10 flex items-center justify-center transition-colors">
                             {state.lang === 'en' ? 'ع' : 'EN'}
                         </button>
