@@ -14,7 +14,7 @@ export default function Profile({ state, dispatch, t }) {
 
     if (!state.user) {
         return (
-            <div className="flex flex-col items-center justify-center min-h-[60vh] text-center space-y-6 animate-fade-in p-6">
+            <div className="flex flex-col items-center justify-center min-h-[70vh] text-center space-y-6 animate-fade-in p-4 md:p-6">
                 <div className="w-24 h-24 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center text-slate-400">
                     <Icons.User className="w-12 h-12" />
                 </div>
@@ -35,9 +35,9 @@ export default function Profile({ state, dispatch, t }) {
     }
 
     return (
-        <div className="max-w-2xl mx-auto space-y-8 animate-slide-up p-4 md:p-0">
+        <div className="max-w-2xl mx-auto space-y-6 md:space-y-8 animate-slide-up p-3 md:p-0">
             {/* Header */}
-            <div className="flex flex-col md:flex-row items-center gap-6 p-8 glass rounded-[2.5rem] relative overflow-hidden">
+            <div className="flex flex-col md:flex-row items-center gap-5 p-5 md:p-8 glass rounded-[2rem] md:rounded-[2.5rem] relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full -mr-16 -mt-16 blur-3xl"></div>
                 <div className="relative">
                     <img src={state.user.picture} alt="" className="w-24 h-24 rounded-3xl object-cover shadow-2xl ring-4 ring-white dark:ring-slate-800" />
@@ -61,7 +61,7 @@ export default function Profile({ state, dispatch, t }) {
             </div>
 
             {/* Editing Form */}
-            <div className="glass p-8 rounded-[2.5rem] space-y-6">
+            <div className="glass p-5 md:p-8 rounded-[2rem] md:rounded-[2.5rem] space-y-6">
                 <div className="flex items-center gap-3 mb-2">
                     <div className="p-2 bg-indigo-500/10 rounded-lg text-indigo-600">
                         <Icons.User className="w-5 h-5" />
@@ -79,7 +79,7 @@ export default function Profile({ state, dispatch, t }) {
                         type="text" 
                         value={name}
                         onChange={(e) => setName(e.target.value)}
-                        className="w-full p-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 focus:border-indigo-500 outline-none transition-all font-bold text-slate-800 dark:text-white"
+                        className="w-full p-3.5 md:p-4 rounded-xl md:rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 focus:border-indigo-500 outline-none transition-all font-bold text-slate-800 dark:text-white"
                         placeholder={isAr ? 'أدخل اسمك هنا...' : 'Enter your name...'}
                     />
                 </div>

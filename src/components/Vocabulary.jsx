@@ -274,26 +274,29 @@ Ensure they follow the requested JSON schema exactly.`;
             </div>
 
             {/* Manual Word Lookup */}
-            <div className="flex items-center gap-3 p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 dark:border-emerald-500/20">
-                <span className="text-2xl">🔍</span>
-                <div className="flex-1 flex gap-2">
+            <div className="flex flex-col sm:flex-row items-center gap-3 p-3 md:p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 dark:border-emerald-500/20">
+                <div className="flex items-center gap-3 w-full sm:w-auto">
+                    <span className="text-2xl">🔍</span>
+                    <p className="sm:hidden font-bold text-emerald-600 dark:text-emerald-400 text-sm">{isAr ? 'أضف كلمة جديدة' : 'Add New Word'}</p>
+                </div>
+                <div className="flex-1 flex gap-2 w-full">
                     <input
                         type="text"
                         value={singleWord}
                         onChange={e => setSingleWord(e.target.value)}
                         onKeyDown={e => e.key === 'Enter' && handleAddSingleWord()}
-                        placeholder={isAr ? 'اكتب كلمة بالإنجليزي والـ AI يكملها...' : 'Type a word and AI will enrich it...'}
+                        placeholder={isAr ? 'اكتب كلمة بالإنجليزي...' : 'Type English word...'}
                         disabled={isLookingUp}
-                        className="flex-1 px-4 py-2.5 rounded-xl bg-white dark:bg-slate-800 border border-emerald-300 dark:border-emerald-700 focus:border-emerald-500 outline-none transition-all text-sm disabled:opacity-50"
+                        className="flex-1 px-4 py-2.5 rounded-xl bg-white dark:bg-slate-800 border border-emerald-300 dark:border-emerald-700 focus:border-emerald-500 outline-none transition-all text-sm disabled:opacity-50 min-w-0"
                     />
                     <button
                         onClick={handleAddSingleWord}
                         disabled={isLookingUp || !singleWord.trim()}
-                        className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-semibold text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-emerald-500/30"
+                        className="flex items-center justify-center gap-2 px-4 md:px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-semibold text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md shrink-0 min-w-[80px]"
                     >
                         {isLookingUp
-                            ? <><Icons.Loader className="w-4 h-4 animate-spin" /> {isAr ? 'جاري...' : 'Loading...'}</>
-                            : <><Icons.Sparkles className="w-4 h-4" /> {isAr ? 'أضف' : 'Add'}</>
+                            ? <Icons.Loader className="w-4 h-4 animate-spin" />
+                            : <><Icons.Sparkles className="w-4 h-4" /> <span className="hidden xs:inline">{isAr ? 'أضف' : 'Add'}</span></>
                         }
                     </button>
                 </div>
