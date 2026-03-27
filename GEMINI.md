@@ -12,11 +12,14 @@
 ## Key Files
 - `src/App.jsx` — Root component: state management (useReducer), Google Auth init, sidebar, routing
 - `src/utils/constants.js` — Translations (T), INITIAL_WORDS, SENTENCES
-- `src/utils/api.js` — Groq API calls for vocabulary and shadowing generation
+- `src/utils/api.js` — AI calls proxied through `/api/chat` serverless function (key never exposed)
+- `api/chat.js` — Vercel Serverless Function: securely proxies Groq API calls server-side
+- `src/utils/supabase.js` — Supabase client (initialized with VITE_SUPABASE_URL + VITE_SUPABASE_ANON_KEY)
+- `src/utils/sync.js` — loadFromSupabase / saveToSupabase helpers for cloud sync
 - `src/components/Icons.jsx` — Custom SVG icon components
 - `src/components/Profile.jsx` — User profile management page
 - `src/components/Quizzes.jsx` — Quiz engine (EN→AR, AR→EN, Mix) with 15s timer
-- `.env` — `VITE_GROQ_API_KEY` and `VITE_GOOGLE_CLIENT_ID`
+- `.env` — `GROQ_API_KEY` (server-only), `VITE_GOOGLE_CLIENT_ID`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`
 
 ## State Management
 Global state lives in `App.jsx` via `useReducer`. Key state fields:

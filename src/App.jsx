@@ -1,4 +1,6 @@
-import React, { useReducer, useEffect } from 'react';
+import React, { useReducer, useEffect, useRef, useCallback } from 'react';
+import { loadFromSupabase, saveToSupabase } from './utils/sync';
+
 import { Icons } from './components/Icons';
 import { T, INITIAL_WORDS, SENTENCES } from './utils/constants';
 import Home from './components/Home';
@@ -121,6 +123,15 @@ function reducer(state, action) {
                 newState.activeSessionId = newState.chatSessions.length > 0 ? newState.chatSessions[0].id : null;
             }
             break;
+        case 'HYDRATE':
+            // Merge cloud data over local state — cloud wins
+            return {
+                ...state,
+                ...action.payload,
+                user: state.user, // keep already-set user object
+                activeTab: state.activeTab,
+                nudgeDismissed: state.nudgeDismissed,
+            };
         default:
             return state;
     }
@@ -140,6 +151,18 @@ function reducer(state, action) {
 
 export default function App() {
     const [state, dispatch] = useReducer(reducer, initialState);
+    const saveTimerRef = useRef(null);
+
+    // Auto-save to Supabase (debounced 1.5s) whenever state changes
+    useEffect(() => {
+        if (!state.user?.id) return;
+        if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+        saveTimerRef.current = setTimeout(() => {
+            saveToSupabase(state.user.id, state);
+        }, 1500);
+        return () => clearTimeout(saveTimerRef.current);
+    }, [state.xp, state.streak, state.words, state.sentences,
+        state.shadowingProgress, state.quizHistory, state.chatSessions, state.user]);
 
     useEffect(() => {
         if (state.theme === 'dark') document.documentElement.classList.add('dark');
@@ -157,15 +180,30 @@ export default function App() {
             window.google.accounts.id.initialize({
                 client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
                 use_fedcm_for_prompt: false,
-                callback: (response) => {
+                callback: async (response) => {
                     try {
                         const payload = JSON.parse(atob(response.credential.split('.')[1]));
-                        dispatch({ type: 'LOGIN', payload: {
+                        const user = {
                             id: payload.sub,
                             name: payload.name,
                             email: payload.email,
                             picture: payload.picture
-                        }});
+                        };
+                        dispatch({ type: 'LOGIN', payload: user });
+                        // Load cloud data and hydrate state
+                        const cloudData = await loadFromSupabase(user.id);
+                        if (cloudData) {
+                            dispatch({ type: 'HYDRATE', payload: {
+                                xp: cloudData.xp ?? 0,
+                                streak: cloudData.streak ?? 0,
+                                lastStudyDate: cloudData.last_study_date ?? null,
+                                words: cloudData.words ?? [],
+                                sentences: cloudData.sentences ?? [],
+                                shadowingProgress: cloudData.shadowing_progress ?? [],
+                                quizHistory: cloudData.quiz_history ?? [],
+                                chatSessions: cloudData.chat_sessions ?? [],
+                            }});
+                        }
                     } catch (e) { console.error(e); }
                 }
             });
