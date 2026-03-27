@@ -207,6 +207,8 @@ export default function App() {
                                 chatSessions: cloudData.chat_sessions ?? [],
                             }});
                         }
+                        // Force refresh to ensure all components and Google Identity UI clean up
+                        setTimeout(() => window.location.reload(), 300);
                     } catch (e) { console.error(e); }
                 }
             });
