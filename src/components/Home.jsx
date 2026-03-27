@@ -252,7 +252,7 @@ export default function Home({ state, dispatch, t }) {
                     )}
 
                     {/* Chat Area */}
-                    <div className="flex-1 p-6 overflow-y-auto space-y-4 max-h-[400px] hide-scrollbar bg-slate-50/50 dark:bg-slate-900/20">
+                    <div className="flex-1 p-6 overflow-y-auto space-y-4 max-h-[600px] hide-scrollbar bg-slate-50/50 dark:bg-slate-900/20">
                         {messages.map((m, idx) => (
                             <div key={idx} className={`flex ${m.role === 'ai' ? 'justify-start' : 'justify-end'} animate-fade-in group`}>
                                 <div className={`relative max-w-[80%] p-4 rounded-3xl font-medium shadow-sm flex flex-col gap-2 ${
