@@ -16,7 +16,10 @@ export default function Shadowing({ state, dispatch }) {
 
     // Filters
     const [filterLevel, setFilterLevel] = useState('All');
+    const [searchTerm, setSearchTerm] = useState('');
     const [generatingLevel, setGeneratingLevel] = useState(null);
+    const [isLookingUp, setIsLookingUp] = useState(false);
+    const [singleSentence, setSingleSentence] = useState('');
 
     // Audio State
     const [isPlaying, setIsPlaying] = useState(false);
@@ -257,6 +260,53 @@ export default function Shadowing({ state, dispatch }) {
         }
     };
 
+    const handleAddSingleSentence = async () => {
+        if (!singleSentence.trim() || isLookingUp) return;
+        
+        const cleanInput = singleSentence.trim();
+        const existing = state.sentences.find(s => s.english.toLowerCase() === cleanInput.toLowerCase());
+        if (existing) {
+            alert(isAr ? 'هذه الجملة موجودة بالفعل!' : 'This sentence already exists!');
+            setSingleSentence('');
+            return;
+        }
+
+        setIsLookingUp(true);
+        try {
+            const prompt = `Enrich this English sentence for shadowing: "${cleanInput}". 
+            Provide the Arabic translation, a list of 3-5 key words from the sentence, and a short topic tag (e.g., Daily Life, Travel, Business).
+            Respond exactly in the requested JSON format.`;
+            
+            const schema = {
+                type: "OBJECT",
+                properties: {
+                    english: { type: "STRING" },
+                    arabic: { type: "STRING" },
+                    words: { type: "ARRAY", items: { type: "STRING" } },
+                    topic: { type: "STRING" }
+                },
+                required: ["english", "arabic", "words", "topic"]
+            };
+
+            const response = await callAI(prompt, "You are a helpful English teacher.", true, schema);
+            
+            if (response && response.arabic) {
+                dispatch({ 
+                    type: 'ADD_SENTENCES', 
+                    payload: [{
+                        ...response,
+                        english: cleanInput // Ensure we use the user's input casing if preferred, or the enriched one
+                    }]
+                });
+                setSingleSentence('');
+            }
+        } catch (error) {
+            alert(isAr ? 'تعذر تحميل الجملة. حاول مرة أخرى.' : 'Could not enrich sentence. Try again.');
+        } finally {
+            setIsLookingUp(false);
+        }
+    };
+
 
     if (!selectedSentence) {
         const displayedSentences = filterLevel === 'All' ? state.sentences : state.sentences.filter(s => s.level === filterLevel);
@@ -266,7 +316,29 @@ export default function Shadowing({ state, dispatch }) {
                 <div className="flex-1 flex justify-between items-center bg-purple-600 text-white p-6 rounded-3xl shadow-lg relative overflow-hidden">
                     <div className="absolute -right-10 -top-10 text-9xl opacity-20"><Icons.Mic /></div>
                     <div className="relative z-10 flex-1">
-                        <h2 className="text-2xl font-bold mb-1">{t('shadowing')}</h2>
+                        <div className="flex items-center gap-3 mb-1">
+                            <h2 className="text-2xl font-bold">{t('shadowing')}</h2>
+                            <div className="flex items-center gap-1.5">
+                                <button 
+                                    onClick={() => handleGenerateShadowPack(filterLevel === 'All' ? 'Beginner' : filterLevel)}
+                                    className="p-1.5 rounded-lg bg-white/20 hover:bg-white/30 transition-colors"
+                                    title="Reload Level"
+                                >
+                                    <Icons.RefreshCw className={`w-4 h-4 ${generatingLevel ? 'animate-spin' : ''}`} />
+                                </button>
+                                <button 
+                                    onClick={() => {
+                                        if (confirm(isAr ? 'هل أنت متأكد من حذف جميع الجمل؟' : 'Clear all sentences?')) {
+                                            dispatch({ type: 'CLEAR_ALL_SENTENCES' });
+                                        }
+                                    }}
+                                    className="p-1.5 rounded-lg bg-white/20 hover:bg-rose-500/40 transition-colors text-white"
+                                    title="Clear All"
+                                >
+                                    <Icons.Trash className="w-4 h-4" />
+                                </button>
+                            </div>
+                        </div>
                         <p className="opacity-80 text-sm">
                             {state.shadowingProgress.length} / {state.sentences.length} {t('shadowSentencesCompleted')}
                         </p>
@@ -276,6 +348,7 @@ export default function Shadowing({ state, dispatch }) {
                     </button>
                 </div>
 
+                {/* 🔍 Search and Manual Entry Header */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div className="flex items-center gap-2">
                         <Icons.TrendingUp className="text-indigo-500" />
@@ -293,6 +366,43 @@ export default function Shadowing({ state, dispatch }) {
                                 {lvl === 'All' ? t('shadowFilterAll') : lvl}
                             </button>
                         ))}
+                    </div>
+                </div>
+
+                {/* ✍️ Manual Sentence Entry Bar */}
+                <div className="glass p-3 md:p-4 rounded-3xl border border-indigo-500/20 bg-indigo-50/30 dark:bg-indigo-950/20 flex flex-col sm:flex-row gap-3 items-center">
+                    <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-xl">🔎</span>
+                    </div>
+                    <input 
+                        type="text"
+                        value={singleSentence}
+                        onChange={(e) => setSingleSentence(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleAddSingleSentence()}
+                        placeholder={isAr ? 'اكتب جملة بالإنجليزية...' : 'Type English sentence...'}
+                        className="flex-1 bg-transparent border-none outline-none text-slate-700 dark:text-slate-200 font-bold placeholder:text-slate-400/60 w-full"
+                    />
+                    <button 
+                        onClick={handleAddSingleSentence}
+                        disabled={!singleSentence.trim() || isLookingUp}
+                        className="w-full sm:w-auto shrink-0 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 dark:disabled:bg-slate-800 text-white px-5 py-2.5 rounded-2xl font-black transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/20 active:scale-95"
+                    >
+                        {isLookingUp ? <Icons.Loader className="w-5 h-5 animate-spin" /> : <Icons.Sparkles className="w-5 h-5" />}
+                        <span className="sm:hidden lg:inline">{isAr ? 'إضافة' : 'Add'}</span>
+                    </button>
+                </div>
+
+                {/* 🔍 Search Bar */}
+                <div className="flex flex-col sm:flex-row gap-3">
+                    <div className="relative flex-1 group">
+                        <Icons.Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
+                        <input 
+                            type="text"
+                            placeholder={isAr ? 'ابحث في جملك...' : 'Search sentences...'}
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full pl-12 pr-4 py-4 bg-white/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-3xl outline-none focus:border-indigo-500/50 focus:ring-4 focus:ring-indigo-500/10 transition-all font-bold"
+                        />
                     </div>
                 </div>
 
@@ -317,7 +427,11 @@ export default function Shadowing({ state, dispatch }) {
 
                 {/* Sentences Grid */}
                 <div className="grid gap-4 md:grid-cols-2">
-                    {displayedSentences.map((s, idx) => {
+                    {displayedSentences.filter(s => 
+                        s.english.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                        s.arabic.includes(searchTerm) ||
+                        s.topic.toLowerCase().includes(searchTerm.toLowerCase())
+                    ).map((s, idx) => {
                         const isCompleted = state.shadowingProgress.includes(s.id);
                         return (
                         <div 

@@ -65,7 +65,7 @@ function reducer(state, action) {
         case 'ADD_WORDS':
             const existingWordSet = new Set(state.words.map(w => w.english.toLowerCase()));
             const maxId = state.words.length > 0 ? Math.max(...state.words.map(w => w.id)) : 0;
-            
+
             const wordsToAdd = action.payload
                 .filter(w => !existingWordSet.has(w.english.toLowerCase()))
                 .map((w, index) => ({
@@ -77,7 +77,7 @@ function reducer(state, action) {
                     level: action.level || "Custom",
                     category: "AI Generated"
                 }));
-            
+
             newState.words = [...wordsToAdd, ...state.words];
             break;
         case 'RESET_WORDS':
@@ -86,12 +86,18 @@ function reducer(state, action) {
         case 'CLEAR_ALL_WORDS':
             newState.words = [];
             break;
+        case 'CLEAR_ALL_SENTENCES':
+            newState.sentences = [];
+            break;
         case 'ADD_SENTENCES':
             const maxSId = state.sentences.length > 0 ? Math.max(...state.sentences.map(s => s.id)) : 0;
             const sentencesToAdd = action.payload.map((s, index) => ({
                 ...s,
                 id: maxSId + index + 1,
-                level: action.level
+                level: action.level || "Custom",
+                learned: false,
+                repetition_count: 0,
+                next_review: null
             }));
             newState.sentences = [...sentencesToAdd, ...state.sentences];
             break;
@@ -113,7 +119,7 @@ function reducer(state, action) {
             newState.activeSessionId = newSession.id;
             break;
         case 'UPDATE_CHAT_SESSION':
-            newState.chatSessions = state.chatSessions.map(s => 
+            newState.chatSessions = state.chatSessions.map(s =>
                 s.id === action.id ? { ...s, messages: action.messages } : s
             );
             break;
@@ -165,7 +171,7 @@ export default function App() {
         }, 1500);
         return () => clearTimeout(saveTimerRef.current);
     }, [state.xp, state.streak, state.words, state.sentences,
-        state.shadowingProgress, state.quizHistory, state.chatSessions, state.user]);
+    state.shadowingProgress, state.quizHistory, state.chatSessions, state.user]);
 
     useEffect(() => {
         if (state.theme === 'dark') document.documentElement.classList.add('dark');
@@ -196,19 +202,19 @@ export default function App() {
                         // Load cloud data and hydrate state
                         const cloudData = await loadFromSupabase(user.id);
                         if (cloudData) {
-                            dispatch({ type: 'HYDRATE', payload: {
-                                xp: cloudData.xp ?? 0,
-                                streak: cloudData.streak ?? 0,
-                                lastStudyDate: cloudData.last_study_date ?? null,
-                                words: cloudData.words ?? [],
-                                sentences: cloudData.sentences ?? [],
-                                shadowingProgress: cloudData.shadowing_progress ?? [],
-                                quizHistory: cloudData.quiz_history ?? [],
-                                chatSessions: cloudData.chat_sessions ?? [],
-                            }});
+                            dispatch({
+                                type: 'HYDRATE', payload: {
+                                    xp: cloudData.xp ?? 0,
+                                    streak: cloudData.streak ?? 0,
+                                    lastStudyDate: cloudData.last_study_date ?? null,
+                                    words: cloudData.words ?? [],
+                                    sentences: cloudData.sentences ?? [],
+                                    shadowingProgress: cloudData.shadowing_progress ?? [],
+                                    quizHistory: cloudData.quiz_history ?? [],
+                                    chatSessions: cloudData.chat_sessions ?? [],
+                                }
+                            });
                         }
-                        // Force refresh to ensure all components and Google Identity UI clean up
-                        setTimeout(() => window.location.reload(), 300);
                     } catch (e) { console.error(e); }
                 }
             });
@@ -230,7 +236,7 @@ export default function App() {
                     shape: 'pill'
                 });
             }
-            window.google.accounts.id.prompt(); 
+            window.google.accounts.id.prompt();
         }
     }, [state.user, state.theme]);
 
@@ -276,9 +282,9 @@ export default function App() {
 
                 <div className="hidden md:flex flex-col gap-4 pt-6 border-t border-slate-100 dark:border-slate-800">
                     {state.user ? (
-                        <div 
-                          onClick={() => dispatch({ type: 'SET_TAB', payload: 'profile' })}
-                          className={`flex items-center gap-3 p-2 group rounded-2xl border transition-all cursor-pointer ${state.activeTab === 'profile' ? 'bg-indigo-600 border-indigo-600 shadow-lg shadow-indigo-500/20' : 'bg-indigo-50/50 dark:bg-indigo-500/5 border-indigo-100 dark:border-indigo-500/20 hover:border-indigo-300 dark:hover:border-indigo-500/40'}`}
+                        <div
+                            onClick={() => dispatch({ type: 'SET_TAB', payload: 'profile' })}
+                            className={`flex items-center gap-3 p-2 group rounded-2xl border transition-all cursor-pointer ${state.activeTab === 'profile' ? 'bg-indigo-600 border-indigo-600 shadow-lg shadow-indigo-500/20' : 'bg-indigo-50/50 dark:bg-indigo-500/5 border-indigo-100 dark:border-indigo-500/20 hover:border-indigo-300 dark:hover:border-indigo-500/40'}`}
                         >
                             <img src={state.user.picture} alt="" className="w-10 h-10 rounded-xl object-cover shadow-sm ring-2 ring-white dark:ring-slate-800" />
                             <div className="flex-1 min-w-0">
@@ -318,27 +324,27 @@ export default function App() {
             {/* Auth Nudge — direct child of root so `fixed` works correctly on mobile */}
             {!state.user && !state.nudgeDismissed && (
                 <div className="fixed bottom-24 md:bottom-6 left-0 right-0 mx-auto w-[94%] max-w-lg glass p-2.5 md:p-4 rounded-2xl border border-indigo-500/30 flex items-center gap-2.5 animate-slide-up shadow-2xl z-40 bg-white/95 dark:bg-slate-900/95 overflow-hidden">
-                     <button
+                    <button
                         onClick={() => dispatch({ type: 'DISMISS_NUDGE' })}
                         className="absolute top-1.5 right-1.5 rtl:right-auto rtl:left-1.5 p-1 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 transition-colors z-10"
                         aria-label="Dismiss"
-                     >
+                    >
                         <Icons.X className="w-3.5 h-3.5" />
-                     </button>
-                     <div className="w-8 h-8 md:w-9 md:h-9 bg-indigo-500 rounded-xl flex items-center justify-center text-white shrink-0 shadow-md shadow-indigo-500/20">
+                    </button>
+                    <div className="w-8 h-8 md:w-9 md:h-9 bg-indigo-500 rounded-xl flex items-center justify-center text-white shrink-0 shadow-md shadow-indigo-500/20">
                         <Icons.Sparkles className="w-4 h-4" />
-                     </div>
-                     <div className="flex-1 min-w-0 pr-2">
+                    </div>
+                    <div className="flex-1 min-w-0 pr-2">
                         <p className="text-[11px] md:text-xs font-black text-slate-800 dark:text-white">{isAr ? 'احفظ تقدمك!' : 'Save your progress!'}</p>
                         <p className="text-[9px] md:text-[10px] text-slate-500 dark:text-slate-400 leading-tight">{isAr ? 'سجل مع جوجل لحفظ الـ XP.' : 'Sign in to sync your XP & words.'}</p>
-                     </div>
-                     <button
+                    </div>
+                    <button
                         onClick={() => window.google?.accounts.id.prompt()}
                         className="md:hidden shrink-0 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-black px-3 py-1.5 rounded-lg transition-all active:scale-95"
-                     >
+                    >
                         {isAr ? 'دخول' : 'Sign in'}
-                     </button>
-                     <div ref={googleNudgeButtonRef} className="hidden md:block shrink-0 scale-90 origin-right rtl:origin-left"></div>
+                    </button>
+                    <div ref={googleNudgeButtonRef} className="hidden md:block shrink-0 scale-90 origin-right rtl:origin-left"></div>
                 </div>
             )}
         </div>
