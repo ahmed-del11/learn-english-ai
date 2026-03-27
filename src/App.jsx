@@ -315,7 +315,7 @@ export default function App() {
 
             {/* Auth Nudge — direct child of root so `fixed` works correctly on mobile */}
             {!state.user && !state.nudgeDismissed && (
-                <div className="fixed bottom-[4.5rem] md:bottom-6 left-0 right-0 mx-auto w-[94%] max-w-lg glass p-2.5 md:p-4 rounded-2xl border border-indigo-500/30 flex items-center gap-2.5 animate-slide-up shadow-2xl z-40 bg-white/95 dark:bg-slate-900/95 overflow-hidden">
+                <div className="fixed bottom-24 md:bottom-6 left-0 right-0 mx-auto w-[94%] max-w-lg glass p-2.5 md:p-4 rounded-2xl border border-indigo-500/30 flex items-center gap-2.5 animate-slide-up shadow-2xl z-40 bg-white/95 dark:bg-slate-900/95 overflow-hidden">
                      <button
                         onClick={() => dispatch({ type: 'DISMISS_NUDGE' })}
                         className="absolute top-1.5 right-1.5 rtl:right-auto rtl:left-1.5 p-1 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 transition-colors z-10"
