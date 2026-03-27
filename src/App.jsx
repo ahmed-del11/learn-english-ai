@@ -301,33 +301,6 @@ export default function App() {
                     {state.activeTab === 'progress' && <Progress state={state} dispatch={dispatch} t={t} />}
                     {state.activeTab === 'profile' && <Profile state={state} dispatch={dispatch} t={t} />}
                 </div>
-
-                {!state.user && !state.nudgeDismissed && (
-                    <div className="fixed bottom-[4.5rem] md:bottom-6 left-1/2 -translate-x-1/2 w-[94%] max-w-lg glass p-2.5 md:p-4 rounded-2xl border border-indigo-500/30 flex items-center gap-2.5 animate-slide-up shadow-2xl z-40 bg-white/95 dark:bg-slate-900/95 overflow-hidden">
-                         <button
-                            onClick={() => dispatch({ type: 'DISMISS_NUDGE' })}
-                            className="absolute top-1.5 right-1.5 rtl:right-auto rtl:left-1.5 p-1 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 transition-colors z-10"
-                            aria-label="Dismiss"
-                         >
-                            <Icons.X className="w-3.5 h-3.5" />
-                         </button>
-                         <div className="w-8 h-8 md:w-9 md:h-9 bg-indigo-500 rounded-xl flex items-center justify-center text-white shrink-0 shadow-md shadow-indigo-500/20">
-                            <Icons.Sparkles className="w-4 h-4" />
-                         </div>
-                         <div className="flex-1 min-w-0 pr-2">
-                            <p className="text-[11px] md:text-xs font-black text-slate-800 dark:text-white">{isAr ? 'احفظ تقدمك!' : 'Save your progress!'}</p>
-                            <p className="text-[9px] md:text-[10px] text-slate-500 dark:text-slate-400 leading-tight">{isAr ? 'سجل مع جوجل لحفظ الـ XP.' : 'Sign in to sync your XP & words.'}</p>
-                         </div>
-                         {/* Mobile: simple button | Desktop: Google branded button */}
-                         <button
-                            onClick={() => window.google?.accounts.id.prompt()}
-                            className="md:hidden shrink-0 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-black px-3 py-1.5 rounded-lg transition-all"
-                         >
-                            {isAr ? 'دخول' : 'Sign in'}
-                         </button>
-                         <div ref={googleNudgeButtonRef} className="hidden md:block shrink-0 scale-90 origin-right rtl:origin-left"></div>
-                    </div>
-                )}
             </main>
 
             <nav className="md:hidden glass fixed bottom-0 left-0 w-full z-50 flex justify-around p-3 pb-safe border-t border-slate-200 dark:border-slate-800">
@@ -339,6 +312,33 @@ export default function App() {
                     </button>
                 ))}
             </nav>
+
+            {/* Auth Nudge — direct child of root so `fixed` works correctly on mobile */}
+            {!state.user && !state.nudgeDismissed && (
+                <div className="fixed bottom-[4.5rem] md:bottom-6 left-0 right-0 mx-auto w-[94%] max-w-lg glass p-2.5 md:p-4 rounded-2xl border border-indigo-500/30 flex items-center gap-2.5 animate-slide-up shadow-2xl z-40 bg-white/95 dark:bg-slate-900/95 overflow-hidden">
+                     <button
+                        onClick={() => dispatch({ type: 'DISMISS_NUDGE' })}
+                        className="absolute top-1.5 right-1.5 rtl:right-auto rtl:left-1.5 p-1 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 transition-colors z-10"
+                        aria-label="Dismiss"
+                     >
+                        <Icons.X className="w-3.5 h-3.5" />
+                     </button>
+                     <div className="w-8 h-8 md:w-9 md:h-9 bg-indigo-500 rounded-xl flex items-center justify-center text-white shrink-0 shadow-md shadow-indigo-500/20">
+                        <Icons.Sparkles className="w-4 h-4" />
+                     </div>
+                     <div className="flex-1 min-w-0 pr-2">
+                        <p className="text-[11px] md:text-xs font-black text-slate-800 dark:text-white">{isAr ? 'احفظ تقدمك!' : 'Save your progress!'}</p>
+                        <p className="text-[9px] md:text-[10px] text-slate-500 dark:text-slate-400 leading-tight">{isAr ? 'سجل مع جوجل لحفظ الـ XP.' : 'Sign in to sync your XP & words.'}</p>
+                     </div>
+                     <button
+                        onClick={() => window.google?.accounts.id.prompt()}
+                        className="md:hidden shrink-0 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-black px-3 py-1.5 rounded-lg transition-all active:scale-95"
+                     >
+                        {isAr ? 'دخول' : 'Sign in'}
+                     </button>
+                     <div ref={googleNudgeButtonRef} className="hidden md:block shrink-0 scale-90 origin-right rtl:origin-left"></div>
+                </div>
+            )}
         </div>
     );
 }
