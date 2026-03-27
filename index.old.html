@@ -1,0 +1,1423 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FluentUp | Premium English Learning</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet">
+
+  <!-- React & ReactDOM -->
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+
+  <!-- Babel for JSX -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            dark: { base: '#0F172A', accent: '#6366F1', success: '#10B981', error: '#F43F5E', surface: 'rgba(30, 41, 59, 0.7)' },
+            light: { base: '#F8FAFC', accent: '#4F46E5', success: '#059669', error: '#E11D48', surface: 'rgba(255, 255, 255, 0.7)' }
+          },
+          fontFamily: {
+            en: ['Inter', 'sans-serif'],
+            ar: ['Cairo', 'sans-serif'],
+          },
+          animation: {
+            'float-up': 'floatUp 1.5s ease-out forwards',
+            'pulse-glow': 'pulseGlow 2s infinite',
+            'shake': 'shake 0.5s cubic-bezier(.36,.07,.19,.97) both',
+            'flip': 'flip 0.6s ease-in-out',
+          },
+          keyframes: {
+            floatUp: {
+              '0%': { opacity: 1, transform: 'translateY(0) scale(1)' },
+              '100%': { opacity: 0, transform: 'translateY(-50px) scale(1.2)' },
+            },
+            pulseGlow: {
+              '0%, 100%': { opacity: 1, transform: 'scale(1)' },
+              '50%': { opacity: 0.8, transform: 'scale(1.05)', boxShadow: '0 0 15px rgba(99, 102, 241, 0.5)' },
+            },
+            shake: {
+              '10%, 90%': { transform: 'translate3d(-1px, 0, 0)' },
+              '20%, 80%': { transform: 'translate3d(2px, 0, 0)' },
+              '30%, 50%, 70%': { transform: 'translate3d(-4px, 0, 0)' },
+              '40%, 60%': { transform: 'translate3d(4px, 0, 0)' }
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Custom Styles & Utilities */
+    body {
+      transition: background-color 0.3s, color 0.3s;
+      overflow-x: hidden;
+    }
+
+    /* Glassmorphism */
+    .glass {
+      background: var(--glass-bg);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--glass-border);
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
+
+    .dark .glass {
+      --glass-bg: rgba(30, 41, 59, 0.7);
+      --glass-border: rgba(255, 255, 255, 0.1);
+    }
+
+    html:not(.dark) .glass {
+      --glass-bg: rgba(255, 255, 255, 0.7);
+      --glass-border: rgba(0, 0, 0, 0.05);
+    }
+
+    /* 3D Flip Card */
+    .perspective-1000 {
+      perspective: 1000px;
+    }
+
+    .transform-style-3d {
+      transform-style: preserve-3d;
+    }
+
+    .backface-hidden {
+      backface-visibility: hidden;
+    }
+
+    .rotate-y-180 {
+      transform: rotateY(180deg);
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #CBD5E1;
+      border-radius: 10px;
+    }
+
+    .dark ::-webkit-scrollbar-thumb {
+      background: #475569;
+    }
+
+    /* Timer Circle */
+    .timer-circle {
+      transition: stroke-dashoffset 1s linear;
+      transform: rotate(-90deg);
+      transform-origin: 50% 50%;
+    }
+
+    /* Floating XP */
+    .xp-popup {
+      position: fixed;
+      pointer-events: none;
+      z-index: 9999;
+      font-weight: bold;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      animation: floatUp 1.5s ease-out forwards;
+    }
+
+    /* Layout transitions */
+    .page-transition-enter {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+
+    .page-transition-enter-active {
+      opacity: 1;
+      transform: translateY(0);
+      transition: opacity 300ms, transform 300ms;
+    }
+  </style>
+</head>
+
+<body
+  class="bg-light-base text-slate-800 dark:bg-dark-base dark:text-slate-100 min-h-screen font-en selection:bg-indigo-500/30">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useReducer, useRef, useCallback, useMemo } = React;
+
+    // --- SVGs & Icons ---
+    const Icons = {
+      Home: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></svg>,
+      Book: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" /></svg>,
+      Mic: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" /><path d="M19 10v2a7 7 0 0 1-14 0v-2" /><line x1="12" x2="12" y1="19" y2="22" /></svg>,
+      Brain: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2Z" /><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2Z" /></svg>,
+      TrendingUp: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17" /><polyline points="16 7 22 7 22 13" /></svg>,
+      Moon: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" /></svg>,
+      Sun: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="4" /><path d="M12 2v2" /><path d="M12 20v2" /><path d="m4.93 4.93 1.41 1.41" /><path d="m17.66 17.66 1.41 1.41" /><path d="M2 12h2" /><path d="M20 12h2" /><path d="m6.34 17.66-1.41 1.41" /><path d="m19.07 4.93-1.41 1.41" /></svg>,
+      Globe: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" /><path d="M2 12h20" /></svg>,
+      Volume: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" /><path d="M15.54 8.46a5 5 0 0 1 0 7.07" /><path d="M19.07 4.93a10 10 0 0 1 0 14.14" /></svg>,
+      Play: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3" /></svg>,
+      Pause: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="6" y="4" width="4" height="16" /><rect x="14" y="4" width="4" height="16" /></svg>,
+      Refresh: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 2v6h-6" /><path d="M3 12a9 9 0 0 1 15-6.7L21 8" /><path d="M3 22v-6h6" /><path d="M21 12a9 9 0 0 1-15 6.7L3 16" /></svg>,
+      Check: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>,
+      X: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>,
+      Sparkles: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" /></svg>,
+      Loader: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="animate-spin"><path d="M21 12a9 9 0 1 1-6.219-8.56" /></svg>,
+      Flame: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" /></svg>,
+      Award: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="7" /><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88" /></svg>,
+      ChevronRight: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6" /></svg>,
+      ChevronLeft: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>,
+      DownloadCloud: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242" /><path d="M12 12v9" /><path d="m8 17 4 4 4-4" /></svg>,
+      CheckCircle: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>
+    };
+
+    // --- Data ---
+    const generateWords = () => {
+      const categories = ['Daily Life', 'Work', 'Travel', 'Food', 'Technology', 'Health', 'Emotions', 'Academic'];
+      const bases = [
+        // BEGINNER (A1/A2)
+        { en: 'water', ar: 'ماء', ph: '/ˈwɔːtər/', em: '💧', exEn: 'I drink water.', exAr: 'أشرب الماء.', lvl: 'Beginner', cat: 'Daily Life' },
+        { en: 'house', ar: 'منزل', ph: '/haʊs/', em: '🏠', exEn: 'This is my house.', exAr: 'هذا منزلي.', lvl: 'Beginner', cat: 'Daily Life' },
+        { en: 'friend', ar: 'صديق', ph: '/frɛnd/', em: '🤝', exEn: 'He is my friend.', exAr: 'إنه صديقي.', lvl: 'Beginner', cat: 'Daily Life' },
+        { en: 'time', ar: 'وقت', ph: '/taɪm/', em: '⏰', exEn: 'What time is it?', exAr: 'كم الوقت؟', lvl: 'Beginner', cat: 'Daily Life' },
+        { en: 'money', ar: 'مال', ph: '/ˈmʌni/', em: '💵', exEn: 'I need money.', exAr: 'أحتاج إلى المال.', lvl: 'Beginner', cat: 'Daily Life' },
+        { en: 'doctor', ar: 'طبيب', ph: '/ˈdɒktər/', em: '👨‍⚕️', exEn: 'See a doctor.', exAr: 'راجع طبيباً.', lvl: 'Beginner', cat: 'Health' },
+        { en: 'food', ar: 'طعام', ph: '/fuːd/', em: '🍔', exEn: 'I love this food.', exAr: 'أحب هذا الطعام.', lvl: 'Beginner', cat: 'Food' },
+        { en: 'happy', ar: 'سعيد', ph: '/ˈhæpi/', em: '😊', exEn: 'I am very happy.', exAr: 'أنا سعيد جداً.', lvl: 'Beginner', cat: 'Emotions' },
+        { en: 'book', ar: 'كتاب', ph: '/bʊk/', em: '📖', exEn: 'Read a book.', exAr: 'اقرأ كتاباً.', lvl: 'Beginner', cat: 'Academic' },
+        { en: 'car', ar: 'سيارة', ph: '/kɑːr/', em: '🚗', exEn: 'I drive a car.', exAr: 'أنا أقود سيارة.', lvl: 'Beginner', cat: 'Travel' },
+
+        // INTERMEDIATE (B1/B2)
+        { en: 'meeting', ar: 'اجتماع', ph: '/ˈmiːtɪŋ/', em: '💼', exEn: 'We have an important meeting.', exAr: 'لدينا اجتماع مهم.', lvl: 'Intermediate', cat: 'Work' },
+        { en: 'project', ar: 'مشروع', ph: '/ˈprɒdʒɛkt/', em: '📊', exEn: 'This is a new project.', exAr: 'هذا مشروع جديد.', lvl: 'Intermediate', cat: 'Work' },
+        { en: 'deadline', ar: 'موعد نهائي', ph: '/ˈdɛdlaɪn/', em: '⏳', exEn: 'We must meet the deadline.', exAr: 'يجب أن نلتزم بالموعد النهائي.', lvl: 'Intermediate', cat: 'Work' },
+        { en: 'passenger', ar: 'مسافر', ph: '/ˈpæsɪndʒər/', em: '🧳', exEn: 'The passenger is waiting.', exAr: 'المسافر ينتظر.', lvl: 'Intermediate', cat: 'Travel' },
+        { en: 'destination', ar: 'وجهة', ph: '/ˌdɛstɪˈneɪʃn/', em: '📍', exEn: 'Paris is our destination.', exAr: 'باريس هي وجهتنا.', lvl: 'Intermediate', cat: 'Travel' },
+        { en: 'delicious', ar: 'لذيذ', ph: '/dɪˈlɪʃəs/', em: '🤤', exEn: 'The meal was delicious.', exAr: 'كانت الوجبة لذيذة.', lvl: 'Intermediate', cat: 'Food' },
+        { en: 'software', ar: 'برمجيات', ph: '/ˈsɔːftwɛər/', em: '💿', exEn: 'Update the software.', exAr: 'حدث البرمجيات.', lvl: 'Intermediate', cat: 'Technology' },
+        { en: 'environment', ar: 'بيئة', ph: '/ɪnˈvaɪrənmənt/', em: '🌍', exEn: 'Protect the environment.', exAr: 'احمِ البيئة.', lvl: 'Intermediate', cat: 'Daily Life' },
+
+        // ADVANCED (C1/C2)
+        { en: 'mitigate', ar: 'يخفف / يقلل', ph: '/ˈmɪtɪɡeɪt/', em: '📉', exEn: 'We need to mitigate the risks.', exAr: 'نحتاج إلى التخفيف من المخاطر.', lvl: 'Advanced', cat: 'Work' },
+        { en: 'ubiquitous', ar: 'شائع / موجود في كل مكان', ph: '/juːˈbɪkwɪtəs/', em: '🌐', exEn: 'Smartphones are ubiquitous today.', exAr: 'الهواتف الذكية موجودة في كل مكان اليوم.', lvl: 'Advanced', cat: 'Technology' },
+        { en: 'lucrative', ar: 'مربح', ph: '/ˈluːkrətɪv/', em: '💸', exEn: 'It is a highly lucrative business.', exAr: 'إنه عمل مربح للغاية.', lvl: 'Advanced', cat: 'Work' },
+        { en: 'pragmatic', ar: 'عملي / واقعي', ph: '/præɡˈmætɪk/', em: '🛠️', exEn: 'We need a pragmatic approach.', exAr: 'نحتاج إلى نهج عملي.', lvl: 'Advanced', cat: 'Work' },
+        { en: 'eloquent', ar: 'فصيح / بليغ', ph: '/ˈɛləkwənt/', em: '🗣️', exEn: 'She gave an eloquent speech.', exAr: 'ألقت خطاباً بليغاً.', lvl: 'Advanced', cat: 'Daily Life' }
+      ];
+
+      return bases.map((b, i) => ({
+        id: i + 1,
+        english: b.en, arabic: b.ar, phonetic: b.ph, emoji: b.em,
+        image_url: `https://source.unsplash.com/200x200/?${encodeURIComponent(b.en)}`,
+        example_en: b.exEn, example_ar: b.exAr,
+        category: b.cat,
+        level: b.lvl,
+        learned: false, repetition_count: 0, next_review: null
+      }));
+    };
+
+    const INITIAL_WORDS = generateWords();
+
+    // Expanded Sentences Data
+    const generateInitialSentences = () => {
+      const rawSentences = [
+        // Beginner
+        { en: "Good morning! How are you doing today?", ar: "صباح الخير! كيف حالك اليوم؟", top: "Greetings", lvl: "Beginner" },
+        { en: "I would like to order a cup of coffee, please.", ar: "أود أن أطلب كوباً من القهوة، من فضلك.", top: "Shopping", lvl: "Beginner" },
+        { en: "Excuse me, where is the nearest train station?", ar: "معذرة، أين أقرب محطة قطار؟", top: "Travel", lvl: "Beginner" },
+        { en: "My name is Sarah, nice to meet you.", ar: "اسمي سارة، سررت بلقائك.", top: "Introductions", lvl: "Beginner" },
+        { en: "Could you please speak a little slower?", ar: "هل يمكنك التحدث ببطء قليلاً من فضلك؟", top: "Learning", lvl: "Beginner" },
+        { en: "How much does this cost?", ar: "كم سعر هذا؟", top: "Shopping", lvl: "Beginner" },
+        { en: "I need a doctor immediately.", ar: "أحتاج إلى طبيب فوراً.", top: "Health", lvl: "Beginner" },
+        { en: "Can I have the menu, please?", ar: "هل يمكنني الحصول على قائمة الطعام، من فضلك؟", top: "Food", lvl: "Beginner" },
+        { en: "Where is the bathroom?", ar: "أين الحمام؟", top: "Daily Life", lvl: "Beginner" },
+        { en: "I don't understand what you mean.", ar: "أنا لا أفهم ما تعنيه.", top: "Learning", lvl: "Beginner" },
+        { en: "What time is our flight?", ar: "في أي وقت رحلتنا؟", top: "Travel", lvl: "Beginner" },
+        { en: "Do you accept credit cards?", ar: "هل تقبلون بطاقات الائتمان؟", top: "Shopping", lvl: "Beginner" },
+        { en: "Is there a pharmacy open near here?", ar: "هل توجد صيدلية مفتوحة بالقرب من هنا؟", top: "Health", lvl: "Beginner" },
+        { en: "I have a reservation under the name Smith.", ar: "لدي حجز باسم سميث.", top: "Travel", lvl: "Beginner" },
+        { en: "Thank you for your help.", ar: "شكراً لك على مساعدتك.", top: "Greetings", lvl: "Beginner" },
+
+        // Intermediate
+        { en: "Nice to meet you. I am looking forward to working together.", ar: "سعدت بلقائك. أتطلع للعمل معاً.", top: "Work", lvl: "Intermediate" },
+        { en: "My flight departs from terminal three at five PM.", ar: "تغادر رحلتي من المبنى رقم ثلاثة في الساعة الخامسة مساءً.", top: "Travel", lvl: "Intermediate" },
+        { en: "What do you recommend for the main course?", ar: "ماذا تقترح للطبق الرئيسي؟", top: "Food", lvl: "Intermediate" },
+        { en: "Let's schedule a follow-up meeting for next Tuesday.", ar: "دعونا نحدد موعداً لاجتماع متابعة يوم الثلاثاء القادم.", top: "Work", lvl: "Intermediate" },
+        { en: "I've been feeling under the weather for a few days.", ar: "أشعر بوعكة صحية منذ بضعة أيام.", top: "Health", lvl: "Intermediate" },
+        { en: "Could you help me with this technical issue?", ar: "هل يمكنك مساعدتي في هذه المشكلة الفنية؟", top: "Technology", lvl: "Intermediate" },
+        { en: "I'm sorry, but I won't be able to make it tomorrow.", ar: "أنا آسف، لكنني لن أتمكن من الحضور غداً.", top: "Daily Life", lvl: "Intermediate" },
+        { en: "Can I get a discount if I buy two of these?", ar: "هل يمكنني الحصول على خصم إذا اشتريت اثنين من هذا؟", top: "Shopping", lvl: "Intermediate" },
+        { en: "She was promoted because of her excellent performance.", ar: "تمت ترقيتها بسبب أدائها الممتاز.", top: "Work", lvl: "Intermediate" },
+        { en: "The traffic was terrible, so I arrived late.", ar: "كانت حركة المرور سيئة للغاية، لذا وصلت متأخراً.", top: "Daily Life", lvl: "Intermediate" },
+        { en: "I would rather stay home than go to the movie.", ar: "أفضل البقاء في المنزل بدلاً من الذهاب إلى الفيلم.", top: "Opinions", lvl: "Intermediate" },
+        { en: "Have you ever been to a foreign country?", ar: "هل سبق لك أن زرت بلداً أجنبياً؟", top: "Small Talk", lvl: "Intermediate" },
+        { en: "We need to fix this bug before the release.", ar: "نحتاج إلى إصلاح هذا الخطأ قبل الإصدار.", top: "Technology", lvl: "Intermediate" },
+        { en: "It takes about an hour to get there by train.", ar: "يستغرق الوصول إلى هناك حوالي ساعة بالقطار.", top: "Travel", lvl: "Intermediate" },
+        { en: "I am completely exhausted after a long day at work.", ar: "أنا مرهق تماماً بعد يوم طويل في العمل.", top: "Emotions", lvl: "Intermediate" },
+
+        // Advanced
+        { en: "I think we need to rethink our current strategy.", ar: "أعتقد أننا بحاجة إلى إعادة التفكير في استراتيجيتنا الحالية.", top: "Work", lvl: "Advanced" },
+        { en: "The weather has been quite unpredictable lately, hasn't it?", ar: "كان الطقس متقلباً جداً مؤخراً، أليس كذلك؟", top: "Small Talk", lvl: "Advanced" },
+        { en: "It was a pleasure doing business with your company.", ar: "كان من دواعي سروري التعامل مع شركتكم.", top: "Work", lvl: "Advanced" },
+        { en: "The presentation highlighted the key metrics perfectly.", ar: "أبرز العرض التقديمي المقاييس الرئيسية بشكل مثالي.", top: "Work", lvl: "Advanced" },
+        { en: "Implementing the new framework significantly improved performance.", ar: "أدى تطبيق الإطار الجديد إلى تحسين الأداء بشكل ملحوظ.", top: "Technology", lvl: "Advanced" },
+        { en: "We must mitigate the potential risks associated with this investment.", ar: "يجب أن نخفف من المخاطر المحتملة المرتبطة بهذا الاستثمار.", top: "Finance", lvl: "Advanced" },
+        { en: "Her eloquent speech captivated the entire audience.", ar: "خطابها البليغ أسر الجمهور بأكمله.", top: "Daily Life", lvl: "Advanced" },
+        { en: "The ambiguity of the instructions led to widespread confusion.", ar: "أدى غموض التعليمات إلى ارتباك واسع النطاق.", top: "Academic", lvl: "Advanced" },
+        { en: "It's imperative that we address these systemic issues promptly.", ar: "من الضروري أن نعالج هذه المشكلات المنهجية على الفور.", top: "Society", lvl: "Advanced" },
+        { en: "Despite the setbacks, the team remained incredibly resilient.", ar: "على الرغم من النكسات، ظل الفريق مرناً بشكل لا يصدق.", top: "Emotions", lvl: "Advanced" },
+        { en: "The ubiquitous nature of smartphones has altered human interaction.", ar: "لقد غيّرت الطبيعة المنتشرة للهواتف الذكية التفاعل البشري.", top: "Technology", lvl: "Advanced" },
+        { en: "They adopted a highly pragmatic approach to solving the crisis.", ar: "لقد تبنوا نهجاً عملياً للغاية لحل الأزمة.", top: "Work", lvl: "Advanced" },
+        { en: "The economic forecast suggests a lucrative quarter ahead.", ar: "تشير التوقعات الاقتصادية إلى ربع سنة مربح قادم.", top: "Finance", lvl: "Advanced" },
+        { en: "It's a paradigm shift in how we perceive renewable energy.", ar: "إنه تحول نموذجي في كيفية نظرتنا للطاقة المتجددة.", top: "Academic", lvl: "Advanced" },
+        { en: "He has a meticulous eye for detail in his architectural designs.", ar: "لديه عين دقيقة للتفاصيل في تصميماته المعمارية.", top: "Art", lvl: "Advanced" }
+      ];
+
+      return rawSentences.map((s, i) => ({
+        id: i + 1,
+        english: s.en,
+        arabic: s.ar,
+        words: s.en.split(' '),
+        topic: s.top,
+        level: s.lvl
+      }));
+    };
+    const INITIAL_SENTENCES = generateInitialSentences();
+
+    // --- Translations ---
+    const T = {
+      appName: { en: "FluentUp", ar: "فلوينت أب" },
+      home: { en: "Home", ar: "الرئيسية" },
+      vocab: { en: "Vocabulary", ar: "المفردات" },
+      shadowing: { en: "Shadowing", ar: "المحاكاة" },
+      quizzes: { en: "Quizzes", ar: "اختبارات" },
+      progress: { en: "Progress", ar: "التقدم" },
+      greeting: { en: "Good Morning! 🌟", ar: "صباح الخير! 🌟" },
+      greetingEve: { en: "Good Evening! 🌙", ar: "مساء الخير! 🌙" },
+      wordOfDay: { en: "Word of the Day", ar: "كلمة اليوم" },
+      streak: { en: "Day Streak", ar: "أيام متتالية" },
+      xpToday: { en: "XP Today", ar: "نقاط اليوم" },
+      dailyGoal: { en: "Daily Goal: 100 XP", ar: "الهدف اليومي: 100 نقطة" },
+      startSession: { en: "Start Session", ar: "ابدأ الجلسة" },
+      level: { en: "Level", ar: "المستوى" },
+      reviewDue: { en: "Due for Review", ar: "للمراجعة" },
+      iKnowIt: { en: "I Know It", ar: "أعرفها" },
+      reviewAgain: { en: "Review Again", ar: "راجعها مجدداً" },
+      hearExample: { en: "Hear Example", ar: "استمع للمثال" },
+      record: { en: "Record", ar: "تسجيل" },
+      stop: { en: "Stop", ar: "إيقاف" },
+      playOriginal: { en: "Original", ar: "الأصلي" },
+      playYours: { en: "Your Voice", ar: "صوتك" },
+      quizMultiple: { en: "Multiple Choice", ar: "خيارات متعددة" },
+      quizFill: { en: "Fill in the Blank", ar: "أكمل الفراغ" },
+      quizScore: { en: "Your Score", ar: "نتيجتك" },
+      achievements: { en: "Achievements", ar: "الإنجازات" },
+      wordsLearned: { en: "Words Learned", ar: "الكلمات المتعلمة" },
+      totalXp: { en: "Total XP", ar: "إجمالي النقاط" },
+      aiGeneratorTitle: { en: "✨ AI Vocab Builder", ar: "✨ منشئ المفردات الذكي" },
+      aiTopicPrompt: { en: "What topic do you want to learn? (e.g., Space, Baking)", ar: "ما الموضوع الذي تريد تعلمه؟ (مثال: الفضاء، الطبخ)" },
+      generateBtn: { en: "Generate", ar: "توليد" },
+      generatingBtn: { en: "Generating...", ar: "جاري التوليد..." },
+      explainGrammar: { en: "✨ Explain Grammar", ar: "✨ شرح القواعد" },
+      levelPacks: { en: "Smart Level Packs (Infinite Words)", ar: "حزم المستويات الذكية (كلمات لا نهائية)" },
+      packBeginner: { en: "Beginner (+10)", ar: "مبتدئ (+10)" },
+      packIntermediate: { en: "Intermediate (+10)", ar: "متوسط (+10)" },
+      packAdvanced: { en: "Advanced (+10)", ar: "متقدم (+10)" },
+      shadowPacks: { en: "Smart Sentence Packs", ar: "حزم الجمل الذكية" },
+      shadowFilterAll: { en: "All Levels", ar: "كل المستويات" },
+      shadowCompleted: { en: "Completed", ar: "مكتمل" },
+      shadowRemaining: { en: "Remaining", ar: "متبقي" },
+    };
+
+    // --- Gemini API Utility ---
+    const apiKey = ""; // API key is automatically injected by the execution environment
+
+    const callGemini = async (prompt, systemInstruction = "", expectJson = false, customSchema = null) => {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+
+      const payload = {
+        contents: [{ parts: [{ text: prompt }] }],
+      };
+
+      if (systemInstruction) {
+        payload.systemInstruction = { parts: [{ text: systemInstruction }] };
+      }
+
+      if (expectJson) {
+        payload.generationConfig = {
+          responseMimeType: "application/json",
+          responseSchema: customSchema || {
+            type: "OBJECT",
+            properties: {
+              words: {
+                type: "ARRAY",
+                items: {
+                  type: "OBJECT",
+                  properties: {
+                    english: { type: "STRING" },
+                    arabic: { type: "STRING" },
+                    phonetic: { type: "STRING" },
+                    emoji: { type: "STRING" },
+                    example_en: { type: "STRING" },
+                    example_ar: { type: "STRING" }
+                  },
+                  required: ["english", "arabic", "phonetic", "emoji", "example_en", "example_ar"]
+                }
+              }
+            },
+            required: ["words"]
+          }
+        };
+      }
+
+      const fetchWithRetry = async (retries = 5, delay = 1000) => {
+        for (let i = 0; i < retries; i++) {
+          try {
+            const res = await fetch(url, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(payload)
+            });
+
+            if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+            const data = await res.json();
+            const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+            if (expectJson) return JSON.parse(text);
+            return text;
+          } catch (error) {
+            if (i === retries - 1) throw error;
+            await new Promise(r => setTimeout(r, delay * Math.pow(2, i)));
+          }
+        }
+      };
+
+      return fetchWithRetry();
+    };
+
+    // --- Utilities ---
+    const playSound = (text, rate = 1) => {
+      if ('speechSynthesis' in window) {
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'en-US';
+        utterance.rate = rate;
+        window.speechSynthesis.speak(utterance);
+      }
+    };
+
+    const createFloatingXP = (amount, x, y) => {
+      const el = document.createElement('div');
+      el.className = 'xp-popup text-success font-bold text-xl';
+      el.innerText = `+${amount} XP`;
+      el.style.left = `${x}px`;
+      el.style.top = `${y}px`;
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 1500);
+    };
+
+    const calculateLevel = (xp) => {
+      if (xp < 500) return { name: 'Beginner (A1/A2)', ar: 'مبتدئ (A1/A2)', next: 500 };
+      if (xp < 1500) return { name: 'Intermediate (B1/B2)', ar: 'متوسط (B1/B2)', next: 1500 };
+      if (xp < 3000) return { name: 'Advanced (C1)', ar: 'متقدم (C1)', next: 3000 };
+      return { name: 'Fluent (C2)', ar: 'طليق (C2)', next: 'Max' };
+    };
+
+    // --- State Management ---
+    const initialState = {
+      lang: 'en',
+      theme: 'dark',
+      xp: parseInt(localStorage.getItem('fluentup_xp') || '0'),
+      streak: parseInt(localStorage.getItem('fluentup_streak') || '0'),
+      lastStudyDate: localStorage.getItem('fluentup_last_study_date') || null,
+      words: JSON.parse(localStorage.getItem('fluentup_words') || JSON.stringify(INITIAL_WORDS)),
+      sentences: JSON.parse(localStorage.getItem('fluentup_sentences') || JSON.stringify(INITIAL_SENTENCES)),
+      shadowingProgress: JSON.parse(localStorage.getItem('fluentup_shadowing_progress') || '[]'),
+      activeTab: 'home',
+    };
+
+    function reducer(state, action) {
+      let newState = { ...state };
+      switch (action.type) {
+        case 'TOGGLE_LANG':
+          newState.lang = state.lang === 'en' ? 'ar' : 'en';
+          break;
+        case 'TOGGLE_THEME':
+          newState.theme = state.theme === 'dark' ? 'light' : 'dark';
+          break;
+        case 'SET_TAB':
+          newState.activeTab = action.payload;
+          break;
+        case 'ADD_XP':
+          newState.xp += action.payload;
+          const today = new Date().toDateString();
+          if (state.lastStudyDate !== today) {
+            newState.streak += 1;
+            newState.lastStudyDate = today;
+          }
+          if (action.event) {
+            createFloatingXP(action.payload, action.event.clientX, action.event.clientY);
+          }
+          break;
+        case 'UPDATE_WORD':
+          newState.words = state.words.map(w => w.id === action.payload.id ? action.payload : w);
+          break;
+        case 'ADD_WORDS':
+          const maxId = state.words.length > 0 ? Math.max(...state.words.map(w => w.id)) : 0;
+          const wordsToAdd = action.payload.map((w, index) => ({
+            ...w,
+            id: maxId + index + 1,
+            image_url: `https://source.unsplash.com/200x200/?${encodeURIComponent(w.english)}`,
+            learned: false,
+            repetition_count: 0,
+            next_review: null,
+            level: action.level || "Custom",
+            category: "AI Generated"
+          }));
+          newState.words = [...wordsToAdd, ...state.words];
+          break;
+        case 'ADD_SENTENCES':
+          const maxSId = state.sentences.length > 0 ? Math.max(...state.sentences.map(s => s.id)) : 0;
+          const sentencesToAdd = action.payload.map((s, index) => ({
+            ...s,
+            id: maxSId + index + 1,
+            level: action.level
+          }));
+          newState.sentences = [...sentencesToAdd, ...state.sentences];
+          break;
+        case 'MARK_SHADOWING_COMPLETE':
+          if (!newState.shadowingProgress.includes(action.payload)) {
+            newState.shadowingProgress = [...newState.shadowingProgress, action.payload];
+          }
+          break;
+      }
+      // Save to localStorage
+      localStorage.setItem('fluentup_xp', newState.xp);
+      localStorage.setItem('fluentup_streak', newState.streak);
+      if (newState.lastStudyDate) localStorage.setItem('fluentup_last_study_date', newState.lastStudyDate);
+      localStorage.setItem('fluentup_words', JSON.stringify(newState.words));
+      localStorage.setItem('fluentup_sentences', JSON.stringify(newState.sentences));
+      localStorage.setItem('fluentup_shadowing_progress', JSON.stringify(newState.shadowingProgress));
+      localStorage.setItem('fluentup_settings', JSON.stringify({ lang: newState.lang, theme: newState.theme }));
+
+      return newState;
+    }
+
+    // --- Components ---
+
+    // 1. Home Dashboard
+    const Home = ({ state, dispatch }) => {
+      const isAr = state.lang === 'ar';
+      const t = (key) => T[key][state.lang];
+      const hour = new Date().getHours();
+      const greeting = hour < 17 ? t('greeting') : t('greetingEve');
+      const levelInfo = calculateLevel(state.xp);
+
+      const dueWords = state.words.filter(w => w.next_review && new Date(w.next_review) <= new Date()).length;
+      const wordOfDay = useMemo(() => state.words[new Date().getDate() % state.words.length], [state.words]);
+
+      const dailyXP = state.xp % 100; // Mock daily XP progress
+      const progressPercent = Math.min(100, (dailyXP / 100) * 100);
+
+      return (
+        <div className="space-y-6 page-transition-enter-active">
+          {/* Header Section */}
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+              <h1 className="text-3xl font-bold">{greeting}</h1>
+              <p className="text-slate-500 dark:text-slate-400 mt-1">{isAr ? `أنت في مستوى ${levelInfo.ar}` : `You are at ${levelInfo.name} level`}</p>
+            </div>
+            <div className="flex gap-4">
+              <div className="glass px-4 py-2 rounded-2xl flex items-center gap-2">
+                <Icons.Flame />
+                <span className="font-bold text-lg text-orange-500">{state.streak}</span>
+              </div>
+              <div className="glass px-4 py-2 rounded-2xl flex flex-col justify-center min-w-[150px]">
+                <div className="flex justify-between text-sm mb-1">
+                  <span>{t('xpToday')}</span>
+                  <span className="font-bold text-dark-accent dark:text-light-accent">{dailyXP}/100</span>
+                </div>
+                <div className="h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                  <div className="h-full bg-indigo-500 transition-all duration-1000" style={{ width: `${progressPercent}%` }}></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Word of the Day */}
+            <div className="glass rounded-3xl p-6 md:col-span-2 relative overflow-hidden group">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-3xl -mr-10 -mt-10 transition-transform group-hover:scale-150"></div>
+              <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                <Icons.Award /> {t('wordOfDay')}
+              </h2>
+              <div className="flex gap-6 items-center">
+                <div className="text-6xl">{wordOfDay.emoji}</div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-3">
+                    <h3 className="text-3xl font-bold">{wordOfDay.english}</h3>
+                    <button onClick={() => playSound(wordOfDay.english)} className="p-2 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 rounded-full hover:scale-110 transition-transform">
+                      <Icons.Volume />
+                    </button>
+                  </div>
+                  <p className="text-slate-500 dark:text-slate-400 font-mono text-sm mt-1">{wordOfDay.phonetic}</p>
+                  <p className="text-xl mt-2 font-ar font-semibold">{wordOfDay.arabic}</p>
+                  <p className="mt-3 text-sm italic opacity-80 border-l-2 border-indigo-500 pl-3 ml-1">
+                    "{isAr ? wordOfDay.example_ar : wordOfDay.example_en}"
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Status Card */}
+            <div className="glass rounded-3xl p-6 flex flex-col justify-between">
+              <div>
+                <h3 className="text-lg font-semibold mb-2">{isAr ? 'خطة اليوم' : 'Today\'s Plan'}</h3>
+                <ul className="space-y-3 mt-4">
+                  <li className="flex justify-between items-center text-sm">
+                    <span className="flex items-center gap-2"><Icons.Book /> {t('reviewDue')}</span>
+                    <span className={`font-bold px-2 py-1 rounded-lg ${dueWords > 0 ? 'bg-orange-100 text-orange-600 dark:bg-orange-900/30' : 'bg-green-100 text-green-600 dark:bg-green-900/30'}`}>
+                      {dueWords}
+                    </span>
+                  </li>
+                </ul>
+              </div>
+              <button onClick={() => dispatch({ type: 'SET_TAB', payload: 'vocab' })} className="w-full mt-4 bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl font-semibold transition-all hover:-translate-y-1 hover:shadow-lg">
+                {t('startSession')}
+              </button>
+            </div>
+          </div>
+
+          {/* Quick Links */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+            {[
+              { id: 'vocab', icon: Icons.Book, color: 'bg-blue-500', title: t('vocab') },
+              { id: 'shadowing', icon: Icons.Mic, color: 'bg-purple-500', title: t('shadowing') },
+              { id: 'quizzes', icon: Icons.Brain, color: 'bg-rose-500', title: t('quizzes') },
+              { id: 'progress', icon: Icons.TrendingUp, color: 'bg-emerald-500', title: t('progress') }
+            ].map(item => (
+              <button key={item.id} onClick={() => dispatch({ type: 'SET_TAB', payload: item.id })} className="glass p-4 rounded-2xl flex flex-col items-center justify-center gap-3 hover:bg-white/20 dark:hover:bg-black/30 transition-colors group">
+                <div className={`${item.color} text-white p-3 rounded-xl group-hover:scale-110 transition-transform`}>
+                  <item.icon />
+                </div>
+                <span className="font-semibold text-sm">{item.title}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      );
+    };
+
+    // 2. Vocabulary Flashcards
+    const Flashcard = ({ word, onResult, t, isAr }) => {
+      const [isFlipped, setIsFlipped] = useState(false);
+      const [aiExplanation, setAiExplanation] = useState("");
+      const [isExplaining, setIsExplaining] = useState(false);
+
+      const handleExplainGrammar = async (e) => {
+        e.stopPropagation();
+        if (aiExplanation) return;
+
+        setIsExplaining(true);
+        try {
+          const prompt = `Explain the grammar of this English sentence concisely to an Arabic speaker who is learning English. Use a friendly, encouraging tone. Provide the explanation in a mix of English and Arabic. Sentence: "${word.example_en}"`;
+          const explanation = await callGemini(prompt, "You are a helpful, bilingual English teacher.");
+          setAiExplanation(explanation);
+        } catch (error) {
+          setAiExplanation(isAr ? "حدث خطأ أثناء الاتصال بالذكاء الاصطناعي." : "Error connecting to AI.");
+        } finally {
+          setIsExplaining(false);
+        }
+      };
+
+      return (
+        <div className="w-full max-w-sm mx-auto perspective-1000 cursor-pointer" style={{ minHeight: '26rem' }} onClick={() => !isFlipped && setIsFlipped(true)}>
+          <div className={`relative w-full h-full min-h-[26rem] transition-transform duration-700 transform-style-3d ${isFlipped ? 'rotate-y-180' : ''}`}>
+
+            {/* Front */}
+            <div className="absolute w-full h-full glass rounded-3xl backface-hidden flex flex-col items-center justify-center p-6 text-center shadow-xl">
+              <div className="text-8xl mb-6 drop-shadow-lg animate-float-up" style={{ animationIterationCount: 'infinite', animationDirection: 'alternate' }}>{word.emoji}</div>
+              <h2 className="text-4xl font-bold mb-2">{word.english}</h2>
+              <p className="text-slate-400 font-mono text-lg">{word.phonetic}</p>
+              <span className="mt-2 px-3 py-1 bg-slate-200 dark:bg-slate-700 rounded-full text-xs font-bold text-slate-500 uppercase">{word.level}</span>
+              <button onClick={(e) => { e.stopPropagation(); playSound(word.english); }} className="mt-6 p-3 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 rounded-full hover:scale-110 transition-transform">
+                <Icons.Volume />
+              </button>
+              {!isFlipped && <p className="absolute bottom-6 text-sm text-slate-400 animate-pulse">{isAr ? 'اضغط للقلب' : 'Tap to flip'}</p>}
+            </div>
+
+            {/* Back */}
+            <div className="absolute w-full h-full glass rounded-3xl backface-hidden rotate-y-180 flex flex-col justify-between p-6 shadow-xl border-t-4 border-indigo-500 overflow-y-auto">
+              <div className="text-center mt-2 mb-4">
+                <h2 className="text-3xl font-bold font-ar text-indigo-600 dark:text-indigo-400 mb-4">{word.arabic}</h2>
+                <div className="bg-slate-100 dark:bg-slate-800/50 p-4 rounded-xl text-left relative">
+                  <p className="italic text-sm mb-2 font-en">{word.example_en}</p>
+                  <p className="font-ar text-sm text-slate-500 dark:text-slate-400" dir="rtl">{word.example_ar}</p>
+
+                  <div className="flex justify-between items-center mt-4 border-t border-slate-200 dark:border-slate-700 pt-3">
+                    <button onClick={(e) => { e.stopPropagation(); playSound(word.example_en, 0.8); }} className="text-xs flex items-center gap-1 text-indigo-500 hover:text-indigo-600 font-bold">
+                      <Icons.Volume /> {t('hearExample')}
+                    </button>
+                    <button onClick={handleExplainGrammar} disabled={isExplaining} className="text-xs flex items-center gap-1 px-2 py-1 rounded bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400 hover:bg-purple-200 transition-colors font-bold">
+                      {isExplaining ? <Icons.Loader /> : <Icons.Sparkles />} {t('explainGrammar')}
+                    </button>
+                  </div>
+
+                  {/* AI Grammar Explanation Box */}
+                  {aiExplanation && (
+                    <div className="mt-3 p-3 bg-purple-50 dark:bg-purple-900/10 border border-purple-200 dark:border-purple-800/50 rounded-lg text-sm text-slate-700 dark:text-slate-300 font-en animate-float-up" style={{ animationDuration: '0.3s', animationFillMode: 'both', transform: 'translateY(0)' }} onClick={(e) => e.stopPropagation()}>
+                      <p className="whitespace-pre-wrap leading-relaxed">{aiExplanation}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="flex gap-4 w-full mt-auto pt-2 shrink-0">
+                <button onClick={(e) => { e.stopPropagation(); onResult(false); setIsFlipped(false); setAiExplanation(""); }} className="flex-1 py-3 rounded-xl font-bold bg-rose-100 text-rose-600 hover:bg-rose-200 dark:bg-rose-900/30 dark:hover:bg-rose-900/50 transition-colors">
+                  {t('reviewAgain')}
+                </button>
+                <button onClick={(e) => { e.stopPropagation(); onResult(true, e); setIsFlipped(false); setAiExplanation(""); }} className="flex-1 py-3 rounded-xl font-bold bg-emerald-100 text-emerald-600 hover:bg-emerald-200 dark:bg-emerald-900/30 dark:hover:bg-emerald-900/50 transition-colors">
+                  {t('iKnowIt')}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    const Vocabulary = ({ state, dispatch }) => {
+      const t = (key) => T[key][state.lang];
+      const isAr = state.lang === 'ar';
+
+      // Simple Session Logic
+      const [sessionWords, setSessionWords] = useState([]);
+      const [currentIndex, setCurrentIndex] = useState(0);
+      const [isSessionActive, setIsSessionActive] = useState(false);
+
+      // AI Generator State
+      const [aiTopic, setAiTopic] = useState('');
+      const [isGeneratingAI, setIsGeneratingAI] = useState(false);
+      const [generatingLevel, setGeneratingLevel] = useState(null); // tracking level packs
+
+      const handleGenerateAI = async () => {
+        if (!aiTopic.trim()) return;
+        setIsGeneratingAI(true);
+        try {
+          const prompt = `Generate exactly 5 English vocabulary words related to the topic: "${aiTopic}". Make them useful for a language learner. Ensure they follow the requested JSON schema exactly.`;
+          const response = await callGemini(prompt, "You are an expert English teacher creating vocabulary lists.", true);
+
+          if (response && response.words && response.words.length > 0) {
+            dispatch({ type: 'ADD_WORDS', payload: response.words, level: 'Custom' });
+            setAiTopic(''); // Clear input on success
+          }
+        } catch (error) {
+          alert(isAr ? 'فشل توليد الكلمات. يرجى المحاولة مرة أخرى.' : 'Failed to generate words. Please try again.');
+        } finally {
+          setIsGeneratingAI(false);
+        }
+      };
+
+      const handleGenerateLevelPack = async (levelName) => {
+        setGeneratingLevel(levelName);
+        try {
+          const prompt = `Generate exactly 10 unique English vocabulary words suitable for a ${levelName} level English learner. Ensure they are NOT basic words if the level is Advanced. Provide a diverse mix of verbs, nouns, and adjectives. Ensure they follow the requested JSON schema exactly, including Arabic translations, phonetics, emojis, and bilingual example sentences.`;
+          const response = await callGemini(prompt, "You are an expert English teacher building a dynamic dictionary.", true);
+
+          if (response && response.words && response.words.length > 0) {
+            dispatch({ type: 'ADD_WORDS', payload: response.words, level: levelName });
+          }
+        } catch (error) {
+          alert(isAr ? 'فشل تحميل الحزمة.' : 'Failed to load pack.');
+        } finally {
+          setGeneratingLevel(null);
+        }
+      };
+
+      const startSession = () => {
+        const now = new Date();
+        const due = state.words.filter(w => w.next_review && new Date(w.next_review) <= now);
+        const newWords = state.words.filter(w => !w.learned).slice(0, 10 - due.length);
+        let selected = [...due, ...newWords].slice(0, 10);
+        if (selected.length === 0) selected = state.words.slice(0, 10); // Fallback
+
+        // Shuffle
+        selected = selected.sort(() => Math.random() - 0.5);
+        setSessionWords(selected);
+        setCurrentIndex(0);
+        setIsSessionActive(true);
+      };
+
+      const handleResult = (knewIt, event) => {
+        const word = sessionWords[currentIndex];
+        let nextReviewDate = new Date();
+
+        if (knewIt) {
+          dispatch({ type: 'ADD_XP', payload: word.learned ? 5 : 10, event });
+          const intervals = [1, 3, 7, 14, 30]; // SM-2 simplified intervals
+          const nextInterval = intervals[Math.min(word.repetition_count, intervals.length - 1)];
+          nextReviewDate.setDate(nextReviewDate.getDate() + nextInterval);
+
+          dispatch({ type: 'UPDATE_WORD', payload: { ...word, learned: true, repetition_count: word.repetition_count + 1, next_review: nextReviewDate.toISOString() } });
+        } else {
+          nextReviewDate.setMinutes(nextReviewDate.getMinutes() + 10); // review soon
+          dispatch({ type: 'UPDATE_WORD', payload: { ...word, repetition_count: Math.max(0, word.repetition_count - 1), next_review: nextReviewDate.toISOString() } });
+        }
+
+        if (currentIndex < sessionWords.length - 1) {
+          setCurrentIndex(prev => prev + 1);
+        } else {
+          setIsSessionActive(false);
+        }
+      };
+
+      if (isSessionActive) {
+        return (
+          <div className="flex flex-col items-center justify-center min-h-[70vh] page-transition-enter-active">
+            <div className="w-full max-w-sm mb-8 flex items-center justify-between px-4">
+              <button onClick={() => setIsSessionActive(false)} className="text-slate-400 hover:text-slate-600"><Icons.X /></button>
+              <div className="flex gap-1">
+                {sessionWords.map((_, i) => (
+                  <div key={i} className={`h-2 w-6 rounded-full ${i < currentIndex ? 'bg-indigo-500' : i === currentIndex ? 'bg-indigo-300 animate-pulse' : 'bg-slate-200 dark:bg-slate-700'}`}></div>
+                ))}
+              </div>
+              <span className="text-sm font-bold text-slate-500">{currentIndex + 1}/{sessionWords.length}</span>
+            </div>
+            <Flashcard word={sessionWords[currentIndex]} onResult={handleResult} t={t} isAr={isAr} />
+          </div>
+        );
+      }
+
+      // List View
+      const learnedCount = state.words.filter(w => w.learned).length;
+
+      return (
+        <div className="space-y-6 page-transition-enter-active">
+          <div className="flex flex-col md:flex-row gap-4">
+            {/* Session Card */}
+            <div className="flex-1 flex justify-between items-center bg-indigo-600 text-white p-6 rounded-3xl shadow-lg relative overflow-hidden">
+              <div className="absolute -right-10 -top-10 text-9xl opacity-20"><Icons.Book /></div>
+              <div className="relative z-10">
+                <h2 className="text-2xl font-bold mb-2">{t('vocab')}</h2>
+                <p className="opacity-80">{learnedCount} / {state.words.length} {isAr ? 'كلمة في القاموس' : 'words in dictionary'}</p>
+              </div>
+              <button onClick={startSession} className="relative z-10 bg-white text-indigo-600 px-6 py-3 rounded-xl font-bold hover:shadow-lg transition-all hover:scale-105">
+                {t('startSession')}
+              </button>
+            </div>
+          </div>
+
+          {/* ✨ AI Infinite Level Packs */}
+          <div className="glass p-6 rounded-3xl border border-indigo-500/30">
+            <div className="flex items-center gap-2 mb-4">
+              <Icons.Sparkles className="text-indigo-500" />
+              <h3 className="font-bold text-lg">{t('levelPacks')}</h3>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <button onClick={() => handleGenerateLevelPack('Beginner')} disabled={generatingLevel !== null} className="p-4 rounded-xl border-2 border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 font-bold transition-all flex justify-between items-center">
+                {t('packBeginner')}
+                {generatingLevel === 'Beginner' ? <Icons.Loader /> : <Icons.DownloadCloud />}
+              </button>
+              <button onClick={() => handleGenerateLevelPack('Intermediate')} disabled={generatingLevel !== null} className="p-4 rounded-xl border-2 border-orange-500/30 bg-orange-500/10 hover:bg-orange-500/20 text-orange-700 dark:text-orange-400 font-bold transition-all flex justify-between items-center">
+                {t('packIntermediate')}
+                {generatingLevel === 'Intermediate' ? <Icons.Loader /> : <Icons.DownloadCloud />}
+              </button>
+              <button onClick={() => handleGenerateLevelPack('Advanced')} disabled={generatingLevel !== null} className="p-4 rounded-xl border-2 border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 text-rose-700 dark:text-rose-400 font-bold transition-all flex justify-between items-center">
+                {t('packAdvanced')}
+                {generatingLevel === 'Advanced' ? <Icons.Loader /> : <Icons.DownloadCloud />}
+              </button>
+            </div>
+          </div>
+
+          {/* ✨ Custom AI Vocab Generator */}
+          <div className="glass p-6 rounded-3xl flex flex-col md:flex-row gap-4 items-center justify-between border border-purple-500/30">
+            <div className="flex items-center gap-3">
+              <div className="bg-purple-100 text-purple-600 dark:bg-purple-900/50 p-3 rounded-xl">
+                <Icons.Sparkles />
+              </div>
+              <div>
+                <h3 className="font-bold text-lg">{t('aiGeneratorTitle')}</h3>
+              </div>
+            </div>
+            <div className="flex flex-1 w-full md:max-w-md gap-2">
+              <input
+                type="text"
+                value={aiTopic}
+                onChange={(e) => setAiTopic(e.target.value)}
+                placeholder={t('aiTopicPrompt')}
+                disabled={isGeneratingAI}
+                className="flex-1 px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800/50 border border-transparent focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 outline-none transition-all"
+              />
+              <button
+                onClick={handleGenerateAI}
+                disabled={isGeneratingAI || !aiTopic.trim()}
+                className="px-5 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-400 disabled:cursor-not-allowed text-white rounded-xl font-bold transition-all flex items-center justify-center gap-2 shadow-lg shadow-purple-500/30"
+              >
+                {isGeneratingAI ? <Icons.Loader /> : <Icons.Sparkles />}
+                <span className="hidden sm:inline">{isGeneratingAI ? t('generatingBtn') : t('generateBtn')}</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            {state.words.map(w => (
+              <div key={w.id} className={`glass p-4 rounded-2xl flex flex-col items-center text-center transition-all hover:border-indigo-500 ${w.learned ? 'border-green-500/30' : ''}`}>
+                <span className="text-3xl mb-2">{w.emoji}</span>
+                <span className="font-bold">{w.english}</span>
+                <span className="text-xs mt-1 px-2 py-0.5 rounded bg-slate-200 dark:bg-slate-700 font-bold text-slate-500">{w.level}</span>
+                <span className="text-sm font-ar text-slate-500 dark:text-slate-400 mt-1">{w.arabic}</span>
+                {w.learned && <div className="absolute top-2 right-2 text-green-500"><Icons.Check /></div>}
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    };
+
+    // 3. Shadowing (Karaoke & Record)
+    const Shadowing = ({ state, dispatch }) => {
+      const t = (key) => T[key][state.lang];
+      const isAr = state.lang === 'ar';
+      const [selectedSentence, setSelectedSentence] = useState(null);
+
+      // Filters
+      const [filterLevel, setFilterLevel] = useState('All');
+      const [generatingLevel, setGeneratingLevel] = useState(null);
+
+      // Audio State
+      const [isPlaying, setIsPlaying] = useState(false);
+      const [activeWordIndex, setActiveWordIndex] = useState(-1);
+
+      // Recording State
+      const [isRecording, setIsRecording] = useState(false);
+      const [audioURL, setAudioURL] = useState(null);
+      const mediaRecorderRef = useRef(null);
+      const audioChunksRef = useRef([]);
+
+      const handlePlayOriginal = () => {
+        if (!selectedSentence) return;
+        window.speechSynthesis.cancel();
+        setIsPlaying(true);
+        setActiveWordIndex(-1);
+
+        const utterance = new SpeechSynthesisUtterance(selectedSentence.english);
+        utterance.lang = 'en-US';
+        utterance.rate = 0.85;
+
+        const words = selectedSentence.words;
+        const totalTime = words.length * 400;
+
+        let wordIdx = 0;
+        const interval = setInterval(() => {
+          if (wordIdx < words.length) {
+            setActiveWordIndex(wordIdx);
+            wordIdx++;
+          } else {
+            clearInterval(interval);
+            setIsPlaying(false);
+            setActiveWordIndex(-1);
+          }
+        }, totalTime / words.length);
+
+        utterance.onend = () => {
+          clearInterval(interval);
+          setIsPlaying(false);
+          setActiveWordIndex(-1);
+        };
+
+        window.speechSynthesis.speak(utterance);
+      };
+
+      const toggleRecording = async () => {
+        if (isRecording) {
+          mediaRecorderRef.current.stop();
+          setIsRecording(false);
+        } else {
+          try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorderRef.current = new MediaRecorder(stream);
+            audioChunksRef.current = [];
+
+            mediaRecorderRef.current.ondataavailable = e => {
+              if (e.data.size > 0) audioChunksRef.current.push(e.data);
+            };
+
+            mediaRecorderRef.current.onstop = () => {
+              const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+              setAudioURL(URL.createObjectURL(audioBlob));
+              dispatch({ type: 'ADD_XP', payload: 20 });
+              dispatch({ type: 'MARK_SHADOWING_COMPLETE', payload: selectedSentence.id });
+            };
+
+            mediaRecorderRef.current.start();
+            setIsRecording(true);
+          } catch (err) {
+            alert(isAr ? 'الرجاء السماح بالوصول للميكروفون' : 'Please allow microphone access.');
+          }
+        }
+      };
+
+      const handleGenerateShadowPack = async (levelName) => {
+        setGeneratingLevel(levelName);
+        try {
+          const prompt = `Generate exactly 5 English sentences for shadowing practice at the ${levelName} level. Provide diverse topics. Respond exactly in the requested JSON format.`;
+
+          const sentenceSchema = {
+            type: "OBJECT",
+            properties: {
+              sentences: {
+                type: "ARRAY",
+                items: {
+                  type: "OBJECT",
+                  properties: {
+                    english: { type: "STRING" },
+                    arabic: { type: "STRING" },
+                    words: { type: "ARRAY", items: { type: "STRING" } },
+                    topic: { type: "STRING" }
+                  },
+                  required: ["english", "arabic", "words", "topic"]
+                }
+              }
+            },
+            required: ["sentences"]
+          };
+
+          const response = await callGemini(prompt, "You are an expert English teacher creating conversational sentences for shadowing.", true, sentenceSchema);
+
+          if (response && response.sentences && response.sentences.length > 0) {
+            dispatch({ type: 'ADD_SENTENCES', payload: response.sentences, level: levelName });
+            setFilterLevel(levelName);
+          }
+        } catch (error) {
+          alert(isAr ? 'فشل تحميل الحزمة.' : 'Failed to load pack.');
+        } finally {
+          setGeneratingLevel(null);
+        }
+      };
+
+
+      if (!selectedSentence) {
+        const displayedSentences = filterLevel === 'All' ? state.sentences : state.sentences.filter(s => s.level === filterLevel);
+
+        return (
+          <div className="space-y-6 page-transition-enter-active">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+              <h2 className="text-2xl font-bold">{t('shadowing')}</h2>
+
+              {/* Filter Pills */}
+              <div className="flex overflow-x-auto gap-2 w-full md:w-auto pb-2 md:pb-0 hide-scrollbar">
+                {['All', 'Beginner', 'Intermediate', 'Advanced'].map(lvl => (
+                  <button
+                    key={lvl}
+                    onClick={() => setFilterLevel(lvl)}
+                    className={`px-4 py-2 rounded-full whitespace-nowrap font-bold text-sm transition-all ${filterLevel === lvl ? 'bg-indigo-600 text-white' : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-300 dark:hover:bg-slate-700'}`}
+                  >
+                    {lvl === 'All' ? t('shadowFilterAll') : lvl}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* ✨ AI Infinite Shadow Packs */}
+            <div className="glass p-5 rounded-3xl border border-indigo-500/30 flex flex-col md:flex-row items-center gap-4">
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <Icons.Sparkles className="text-indigo-500" />
+                <h3 className="font-bold text-sm md:text-base">{t('shadowPacks')}</h3>
+              </div>
+              <div className="flex flex-1 gap-2 overflow-x-auto w-full hide-scrollbar">
+                <button onClick={() => handleGenerateShadowPack('Beginner')} disabled={generatingLevel !== null} className="flex-1 min-w-[120px] p-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 font-bold text-sm transition-all flex justify-center items-center gap-2">
+                  {generatingLevel === 'Beginner' ? <Icons.Loader /> : <Icons.DownloadCloud />} {t('packBeginner').replace('10', '5')}
+                </button>
+                <button onClick={() => handleGenerateShadowPack('Intermediate')} disabled={generatingLevel !== null} className="flex-1 min-w-[120px] p-3 rounded-xl border border-orange-500/30 bg-orange-500/10 hover:bg-orange-500/20 text-orange-700 dark:text-orange-400 font-bold text-sm transition-all flex justify-center items-center gap-2">
+                  {generatingLevel === 'Intermediate' ? <Icons.Loader /> : <Icons.DownloadCloud />} {t('packIntermediate').replace('10', '5')}
+                </button>
+                <button onClick={() => handleGenerateShadowPack('Advanced')} disabled={generatingLevel !== null} className="flex-1 min-w-[120px] p-3 rounded-xl border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 text-rose-700 dark:text-rose-400 font-bold text-sm transition-all flex justify-center items-center gap-2">
+                  {generatingLevel === 'Advanced' ? <Icons.Loader /> : <Icons.DownloadCloud />} {t('packAdvanced').replace('10', '5')}
+                </button>
+              </div>
+            </div>
+
+            {/* Sentences Grid */}
+            <div className="grid gap-4 md:grid-cols-2">
+              {displayedSentences.map(s => {
+                const isCompleted = state.shadowingProgress.includes(s.id);
+                return (
+                  <button key={s.id} onClick={() => { setSelectedSentence(s); setAudioURL(null); }} className={`glass p-6 rounded-2xl text-left hover:border-indigo-500 transition-all flex justify-between items-center group ${isCompleted ? 'border-green-500/30 bg-green-50/50 dark:bg-green-900/10' : ''}`}>
+                    <div className="flex-1 pr-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-xs font-bold px-2 py-1 rounded bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300">{s.topic}</span>
+                        <span className={`text-[10px] uppercase font-bold px-2 py-1 rounded ${s.level === 'Beginner' ? 'text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30' : s.level === 'Intermediate' ? 'text-orange-600 bg-orange-100 dark:bg-orange-900/30' : 'text-rose-600 bg-rose-100 dark:bg-rose-900/30'}`}>{s.level}</span>
+                      </div>
+                      <p className={`font-bold text-lg mb-1 transition-colors ${isCompleted ? 'text-slate-700 dark:text-slate-300' : 'group-hover:text-indigo-600 dark:group-hover:text-indigo-400'}`}>{s.english}</p>
+                      <p className="font-ar text-slate-500 text-sm">{s.arabic}</p>
+                    </div>
+                    <div className="flex flex-col items-center gap-2">
+                      {isCompleted && <Icons.CheckCircle className="text-green-500" />}
+                      <div className={`text-slate-300 group-hover:text-indigo-500 transition-colors ${isCompleted ? 'opacity-50' : ''}`}>
+                        {isAr ? <Icons.ChevronLeft /> : <Icons.ChevronRight />}
+                      </div>
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        );
+      }
+
+      return (
+        <div className="max-w-2xl mx-auto space-y-8 page-transition-enter-active">
+          <button onClick={() => setSelectedSentence(null)} className="flex items-center gap-2 text-slate-500 hover:text-slate-800 dark:hover:text-white transition-colors">
+            {isAr ? <Icons.ChevronRight /> : <Icons.ChevronLeft />} {isAr ? 'عودة' : 'Back'}
+          </button>
+
+          <div className="glass p-8 rounded-3xl text-center shadow-lg relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 to-purple-500"></div>
+
+            <div className="text-3xl md:text-4xl font-bold leading-relaxed mb-6 flex flex-wrap justify-center gap-x-2">
+              {selectedSentence.words.map((word, i) => (
+                <span key={i} className={`transition-colors duration-200 ${i === activeWordIndex ? 'text-indigo-500 drop-shadow-md scale-110 inline-block' : 'text-slate-800 dark:text-slate-100'}`}>
+                  {word}
+                </span>
+              ))}
+            </div>
+            <p className="text-xl font-ar text-slate-500 dark:text-slate-400 mb-8" dir="rtl">{selectedSentence.arabic}</p>
+
+            <div className="flex flex-col items-center gap-6">
+              <button onClick={handlePlayOriginal} disabled={isPlaying} className={`flex items-center gap-2 px-6 py-3 rounded-full font-bold transition-all ${isPlaying ? 'bg-indigo-100 text-indigo-400' : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg hover:shadow-indigo-500/50 hover:-translate-y-1'}`}>
+                {isPlaying ? <Icons.Pause /> : <Icons.Play />} {t('playOriginal')}
+              </button>
+
+              <div className="w-full h-px bg-slate-200 dark:bg-slate-700 my-2 relative">
+                <span className="absolute left-1/2 -translate-x-1/2 -top-3 bg-light-base dark:bg-dark-base px-2 text-sm text-slate-400">or</span>
+              </div>
+
+              <button onClick={toggleRecording} className={`relative flex items-center justify-center w-20 h-20 rounded-full transition-all ${isRecording ? 'bg-rose-500 shadow-[0_0_30px_rgba(244,63,94,0.5)]' : 'bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700'}`}>
+                {isRecording ? (
+                  <div className="w-8 h-8 bg-white rounded-sm animate-pulse"></div>
+                ) : (
+                  <Icons.Mic className="w-8 h-8 text-slate-600 dark:text-slate-300" />
+                )}
+                {isRecording && <div className="absolute inset-0 rounded-full border-4 border-rose-500 animate-ping opacity-20"></div>}
+              </button>
+              <span className="text-sm font-semibold">{isRecording ? t('stop') : t('record')}</span>
+
+              {audioURL && (
+                <div className="mt-4 p-4 glass rounded-2xl w-full flex items-center justify-between animate-float-up" style={{ animationDuration: '0.5s', animationFillMode: 'both' }}>
+                  <span className="font-semibold flex items-center gap-2"><Icons.Check className="text-green-500" /> {t('playYours')}</span>
+                  <audio src={audioURL} controls className="h-10 w-48 custom-audio"></audio>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    // 4. Quizzes
+    const Quizzes = ({ state, dispatch }) => {
+      const t = (key) => T[key][state.lang];
+      const isAr = state.lang === 'ar';
+
+      const [quizState, setQuizState] = useState('menu');
+      const [questions, setQuestions] = useState([]);
+      const [currentQIndex, setCurrentQIndex] = useState(0);
+      const [score, setScore] = useState(0);
+
+      const [timeLeft, setTimeLeft] = useState(15);
+
+      const startQuiz = () => {
+        const pool = state.words.filter(w => w.learned).length > 10 ? state.words.filter(w => w.learned) : state.words;
+        const shuffled = [...pool].sort(() => 0.5 - Math.random()).slice(0, 5);
+
+        const generatedQs = shuffled.map(w => {
+          const options = [w];
+          while (options.length < 4) {
+            const randomW = pool[Math.floor(Math.random() * pool.length)];
+            if (!options.find(o => o.id === randomW.id)) options.push(randomW);
+          }
+          return {
+            word: w,
+            options: options.sort(() => 0.5 - Math.random()),
+            type: Math.random() > 0.5 ? 'en-ar' : 'ar-en'
+          };
+        });
+
+        setQuestions(generatedQs);
+        setCurrentQIndex(0);
+        setScore(0);
+        setTimeLeft(15);
+        setQuizState('playing');
+      };
+
+      useEffect(() => {
+        let timer;
+        if (quizState === 'playing' && timeLeft > 0) {
+          timer = setInterval(() => setTimeLeft(prev => prev - 1), 1000);
+        } else if (timeLeft === 0 && quizState === 'playing') {
+          handleAnswer(null);
+        }
+        return () => clearInterval(timer);
+      }, [quizState, timeLeft]);
+
+      const handleAnswer = (selectedId, event) => {
+        const isCorrect = selectedId === questions[currentQIndex].word.id;
+
+        if (isCorrect) {
+          setScore(prev => prev + 1);
+          dispatch({ type: 'ADD_XP', payload: 10, event });
+        }
+
+        setTimeout(() => {
+          if (currentQIndex < questions.length - 1) {
+            setCurrentQIndex(prev => prev + 1);
+            setTimeLeft(15);
+          } else {
+            setQuizState('results');
+            if (score + (isCorrect ? 1 : 0) === questions.length) {
+              dispatch({ type: 'ADD_XP', payload: 50 });
+            }
+          }
+        }, 500);
+      };
+
+      if (quizState === 'menu') {
+        return (
+          <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-8 page-transition-enter-active">
+            <div className="w-32 h-32 bg-rose-100 dark:bg-rose-900/30 rounded-full flex items-center justify-center text-rose-500 animate-pulse-glow">
+              <Icons.Brain className="w-16 h-16" />
+            </div>
+            <div className="text-center">
+              <h2 className="text-3xl font-bold mb-2">{t('quizzes')}</h2>
+              <p className="text-slate-500 mb-8">{isAr ? 'اختبر معلوماتك واربح النقاط' : 'Test your knowledge and earn XP'}</p>
+              <button onClick={startQuiz} className="bg-rose-500 hover:bg-rose-600 text-white px-8 py-4 rounded-2xl font-bold text-xl transition-all hover:scale-105 hover:shadow-lg shadow-rose-500/30">
+                {isAr ? 'ابدأ الاختبار السريع' : 'Start Quick Quiz'}
+              </button>
+            </div>
+          </div>
+        );
+      }
+
+      if (quizState === 'results') {
+        const percentage = (score / questions.length) * 100;
+        return (
+          <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-6 page-transition-enter-active">
+            <div className="glass p-10 rounded-3xl text-center max-w-sm w-full">
+              <h2 className="text-2xl font-bold mb-6">{t('quizScore')}</h2>
+              <div className="relative w-40 h-40 mx-auto mb-6">
+                <svg viewBox="0 0 36 36" className="w-full h-full stroke-current text-slate-200 dark:text-slate-700 fill-none" strokeWidth="3">
+                  <circle cx="18" cy="18" r="16"></circle>
+                </svg>
+                <svg viewBox="0 0 36 36" className="w-full h-full stroke-current text-rose-500 fill-none absolute top-0 left-0 timer-circle" strokeWidth="3" strokeDasharray={`${percentage}, 100`}>
+                  <circle cx="18" cy="18" r="16"></circle>
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center text-4xl font-bold">
+                  {score}/{questions.length}
+                </div>
+              </div>
+              <p className="text-lg mb-8">{percentage === 100 ? (isAr ? 'ممتاز! 🌟' : 'Perfect! 🌟') : (isAr ? 'عمل جيد!' : 'Good job!')}</p>
+              <button onClick={() => setQuizState('menu')} className="w-full bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 py-3 rounded-xl font-semibold transition-colors">
+                {isAr ? 'إنهاء' : 'Finish'}
+              </button>
+            </div>
+          </div>
+        );
+      }
+
+      const q = questions[currentQIndex];
+      return (
+        <div className="max-w-xl mx-auto space-y-6 mt-8 page-transition-enter-active">
+          <div className="flex justify-between items-center px-4">
+            <span className="font-bold text-slate-500">{currentQIndex + 1} / {questions.length}</span>
+            <div className={`font-mono text-xl font-bold ${timeLeft <= 5 ? 'text-rose-500 animate-pulse' : ''}`}>
+              00:{timeLeft.toString().padStart(2, '0')}
+            </div>
+          </div>
+
+          <div className="glass p-8 rounded-3xl text-center shadow-md">
+            <p className="text-sm text-slate-400 mb-4 uppercase tracking-widest">{t('quizMultiple')}</p>
+            <h3 className={`text-4xl font-bold mb-8 ${q.type === 'en-ar' ? 'font-en' : 'font-ar text-indigo-500'}`}>
+              {q.type === 'en-ar' ? q.word.english : q.word.arabic}
+            </h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {q.options.map(opt => (
+                <button
+                  key={opt.id}
+                  onClick={(e) => handleAnswer(opt.id, e)}
+                  className="p-4 rounded-xl border-2 border-slate-200 dark:border-slate-700 hover:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all text-lg font-semibold"
+                >
+                  {q.type === 'en-ar' ? opt.arabic : opt.english}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    // 5. Progress & Stats
+    const Progress = ({ state }) => {
+      const t = (key) => T[key][state.lang];
+      const isAr = state.lang === 'ar';
+      const levelInfo = calculateLevel(state.xp);
+      const learnedCount = state.words.filter(w => w.learned).length;
+
+      return (
+        <div className="space-y-8 page-transition-enter-active">
+          <h2 className="text-2xl font-bold">{t('progress')}</h2>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="glass p-6 rounded-2xl flex flex-col justify-center items-center text-center">
+              <span className="text-4xl font-black text-indigo-500 mb-2">{state.xp}</span>
+              <span className="text-sm text-slate-500 font-semibold uppercase">{t('totalXp')}</span>
+            </div>
+            <div className="glass p-6 rounded-2xl flex flex-col justify-center items-center text-center">
+              <span className="text-4xl font-black text-orange-500 mb-2 flex items-center">{state.streak} <Icons.Flame className="w-8 h-8 ml-1" /></span>
+              <span className="text-sm text-slate-500 font-semibold uppercase">{t('streak')}</span>
+            </div>
+            <div className="glass p-6 rounded-2xl flex flex-col justify-center items-center text-center">
+              <span className="text-4xl font-black text-emerald-500 mb-2">{learnedCount}</span>
+              <span className="text-sm text-slate-500 font-semibold uppercase">{t('wordsLearned')}</span>
+            </div>
+            <div className="glass p-6 rounded-2xl flex flex-col justify-center items-center text-center">
+              <span className="text-xl font-bold text-purple-500 mb-2">{levelInfo.name}</span>
+              <span className="text-sm text-slate-500 font-semibold uppercase">{t('level')}</span>
+            </div>
+          </div>
+
+          <div className="glass p-8 rounded-3xl">
+            <div className="flex justify-between items-end mb-4">
+              <div>
+                <h3 className="text-lg font-bold">{isAr ? 'مسار التعلم' : 'Learning Path'}</h3>
+                <p className="text-slate-500 text-sm">{state.xp} / {levelInfo.next} XP</p>
+              </div>
+              <div className="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center font-bold text-xl">
+                {levelInfo.name.charAt(0)}
+              </div>
+            </div>
+            <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+              <div className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-1000" style={{ width: `${Math.min(100, (state.xp / (levelInfo.next === 'Max' ? state.xp : levelInfo.next)) * 100)}%` }}></div>
+            </div>
+          </div>
+
+          <div>
+            <h3 className="text-xl font-bold mb-4">{t('achievements')}</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {[
+                { icon: '🔥', title: 'On Fire', desc: '7 Day Streak', active: state.streak >= 7 },
+                { icon: '📚', title: 'Word Nerd', desc: '50 Words', active: learnedCount >= 50 },
+                { icon: '🎯', title: 'Sharpshooter', desc: 'Perfect Quiz', active: state.xp > 150 },
+                { icon: '🚀', title: 'Explorer', desc: 'Reach Int. Level', active: state.xp >= 500 }
+              ].map((badge, i) => (
+                <div key={i} className={`glass p-4 rounded-2xl text-center transition-all ${badge.active ? 'opacity-100' : 'opacity-40 grayscale'}`}>
+                  <div className="text-4xl mb-2">{badge.icon}</div>
+                  <h4 className="font-bold">{badge.title}</h4>
+                  <p className="text-xs text-slate-500">{badge.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+
+    // --- Main App Layout ---
+    const App = () => {
+      const [state, dispatch] = useReducer(reducer, initialState);
+
+      useEffect(() => {
+        if (state.theme === 'dark') {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+        document.documentElement.dir = state.lang === 'ar' ? 'rtl' : 'ltr';
+        document.documentElement.className = `${document.documentElement.className.replace(/font-\w+/, '')} ${state.lang === 'ar' ? 'font-ar' : 'font-en'}`;
+      }, [state.theme, state.lang]);
+
+      const t = (key) => T[key][state.lang];
+
+      const navItems = [
+        { id: 'home', icon: Icons.Home, label: t('home') },
+        { id: 'vocab', icon: Icons.Book, label: t('vocab') },
+        { id: 'shadowing', icon: Icons.Mic, label: t('shadowing') },
+        { id: 'quizzes', icon: Icons.Brain, label: t('quizzes') },
+        { id: 'progress', icon: Icons.TrendingUp, label: t('progress') }
+      ];
+
+      return (
+        <div className={`min-h-screen flex flex-col md:flex-row ${state.lang === 'ar' ? 'font-ar' : 'font-en'}`}>
+
+          <nav className="glass sticky top-0 md:h-screen w-full md:w-64 z-50 flex md:flex-col justify-between p-4 border-b md:border-b-0 md:border-r border-slate-200 dark:border-slate-800">
+
+            <div className="flex md:flex-col items-center md:items-start justify-between md:justify-start w-full gap-6">
+              <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-black text-2xl tracking-tighter">
+                <Icons.Globe className="w-8 h-8" />
+                <span className="hidden md:block">{t('appName')}</span>
+              </div>
+
+              <div className="flex md:w-full gap-2">
+                <button onClick={() => dispatch({ type: 'TOGGLE_LANG' })} className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 font-bold text-sm w-10 h-10 flex items-center justify-center transition-colors">
+                  {state.lang === 'en' ? 'ع' : 'EN'}
+                </button>
+                <button onClick={() => dispatch({ type: 'TOGGLE_THEME' })} className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 w-10 h-10 flex items-center justify-center transition-colors">
+                  {state.theme === 'dark' ? <Icons.Sun /> : <Icons.Moon />}
+                </button>
+              </div>
+            </div>
+
+            <div className="hidden md:flex flex-col gap-2 mt-8 w-full">
+              {navItems.map(item => (
+                <button key={item.id} onClick={() => dispatch({ type: 'SET_TAB', payload: item.id })}
+                  className={`flex items-center gap-3 w-full p-3 rounded-xl font-semibold transition-all ${state.activeTab === item.id ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/30' : 'hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400'}`}>
+                  <item.icon /> {item.label}
+                </button>
+              ))}
+            </div>
+          </nav>
+
+          <main className="flex-1 p-4 md:p-8 pb-24 md:pb-8 overflow-y-auto w-full max-w-6xl mx-auto">
+            {state.activeTab === 'home' && <Home state={state} dispatch={dispatch} />}
+            {state.activeTab === 'vocab' && <Vocabulary state={state} dispatch={dispatch} />}
+            {state.activeTab === 'shadowing' && <Shadowing state={state} dispatch={dispatch} />}
+            {state.activeTab === 'quizzes' && <Quizzes state={state} dispatch={dispatch} />}
+            {state.activeTab === 'progress' && <Progress state={state} dispatch={dispatch} />}
+          </main>
+
+          <nav className="md:hidden glass fixed bottom-0 left-0 w-full z-50 flex justify-around p-3 pb-safe border-t border-slate-200 dark:border-slate-800">
+            {navItems.map(item => (
+              <button key={item.id} onClick={() => dispatch({ type: 'SET_TAB', payload: item.id })}
+                className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all ${state.activeTab === item.id ? 'text-indigo-600 dark:text-indigo-400 scale-110' : 'text-slate-500'}`}>
+                <item.icon />
+                <span className="text-[10px] font-semibold">{item.label}</span>
+              </button>
+            ))}
+          </nav>
+
+        </div>
+      );
+    };
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+
+</html>
