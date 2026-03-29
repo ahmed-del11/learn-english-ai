@@ -2,7 +2,7 @@ import React, { useReducer, useEffect, useRef, useCallback } from 'react';
 import { loadFromSupabase, saveToSupabase } from './utils/sync';
 
 import { Icons } from './components/Icons';
-import { T, INITIAL_WORDS, SENTENCES } from './utils/constants';
+import { T, INITIAL_WORDS, SENTENCES, PUBLIC_DOMAIN_STORIES } from './utils/constants';
 import Home from './components/Home';
 import Vocabulary from './components/Vocabulary';
 import Shadowing from './components/Shadowing';
@@ -22,6 +22,7 @@ const initialState = {
     shadowingProgress: JSON.parse(localStorage.getItem('fluentup_shadowing_progress') || '[]'),
     quizHistory: JSON.parse(localStorage.getItem('fluentup_quiz_history') || '[]'),
     chatSessions: JSON.parse(localStorage.getItem('fluentup_chat_sessions') || '[]'),
+    stories: [], 
     storyProgress: JSON.parse(localStorage.getItem('fluentup_story_progress') || '[]'),
     activeSessionId: localStorage.getItem('fluentup_active_session_id') ? parseInt(localStorage.getItem('fluentup_active_session_id')) : null,
     activeTab: 'home',
@@ -116,6 +117,9 @@ function reducer(state, action) {
                 newState.storyProgress = [...newState.storyProgress, action.payload];
             }
             break;
+        case 'ADD_STORY_TO_LIBRARY':
+            newState.stories = [action.payload, ...state.stories];
+            break;
         case 'CREATE_CHAT_SESSION':
             const newSession = {
                 id: Date.now(),
@@ -159,6 +163,7 @@ function reducer(state, action) {
     localStorage.setItem('fluentup_shadowing_progress', JSON.stringify(newState.shadowingProgress));
     localStorage.setItem('fluentup_quiz_history', JSON.stringify(newState.quizHistory));
     localStorage.setItem('fluentup_chat_sessions', JSON.stringify(newState.chatSessions));
+    localStorage.setItem('fluentup_stories', JSON.stringify(newState.stories));
     localStorage.setItem('fluentup_story_progress', JSON.stringify(newState.storyProgress));
     if (newState.activeSessionId) localStorage.setItem('fluentup_active_session_id', newState.activeSessionId);
     localStorage.setItem('fluentup_user', JSON.stringify(newState.user));
@@ -170,6 +175,51 @@ export default function App() {
     const [state, dispatch] = useReducer(reducer, initialState);
     const saveTimerRef = useRef(null);
 
+    // Initial Data Sync and Merging
+    useEffect(() => {
+        // Migration: Fix broken story covers from previous versions
+        const brokenMap = {
+            '1582121110005-48b48f95c029': '1622321459297-f03ba30283ea', // Selfish Giant
+            '1587876222912-3df9f81fb976': '1512446816042-442d7100abd4', // Blue Carbuncle
+            '1516979187457-637abb4f9353': '1418985991508-e473a24ebb4f', // Match Girl
+            '1543332164-6e82f355badc': '1418985991508-e473a24ebb4f', // Match Girl (alt)
+            '1544648151-28231920875e': '1510425718306-72433bb08e92', // Sherlock
+            '1532012197267-da84d127e765': '1512820790803-83ca734da794'  // Novels
+        };
+
+        const needsFix = state.stories.some(s => Object.keys(brokenMap).some(brokenId => s.cover?.includes(brokenId)));
+        
+        if (needsFix) {
+            const fixedStories = state.stories.map(s => {
+                let newCover = s.cover;
+                Object.entries(brokenMap).forEach(([brokenId, workingId]) => {
+                    if (s.cover?.includes(brokenId)) {
+                        newCover = s.cover.replace(brokenId, workingId);
+                    }
+                });
+                return { ...s, cover: newCover };
+            });
+            
+            // Apply fixes to both active library and local storage directly to be safe
+            dispatch({ type: 'HYDRATE', payload: { ...state, stories: fixedStories } });
+        }
+
+        try {
+            const savedStories = JSON.parse(localStorage.getItem('fluentup_stories') || '[]');
+            const initialStories = [...PUBLIC_DOMAIN_STORIES];
+            const userStories = Array.isArray(savedStories) ? savedStories.filter(s => !s.isInitial) : [];
+            const mergedStories = [...initialStories, ...userStories];
+            
+            dispatch({ type: 'HYDRATE', payload: { 
+                stories: mergedStories,
+                words: JSON.parse(localStorage.getItem('fluentup_words') || JSON.stringify(INITIAL_WORDS)),
+                sentences: JSON.parse(localStorage.getItem('fluentup_sentences') || JSON.stringify(SENTENCES))
+            }});
+        } catch (e) {
+            console.error("Hydration failed", e);
+        }
+    }, []);
+
     // Auto-save to Supabase (debounced 1.5s) whenever state changes
     useEffect(() => {
         if (!state.user?.id) return;
@@ -179,7 +229,7 @@ export default function App() {
         }, 1500);
         return () => clearTimeout(saveTimerRef.current);
     }, [state.xp, state.streak, state.words, state.sentences,
-    state.shadowingProgress, state.quizHistory, state.chatSessions, state.storyProgress, state.user]);
+    state.shadowingProgress, state.quizHistory, state.chatSessions, state.storyProgress, state.user, state.stories]);
 
     useEffect(() => {
         if (state.theme === 'dark') document.documentElement.classList.add('dark');
@@ -220,6 +270,7 @@ export default function App() {
                                     shadowingProgress: cloudData.shadowing_progress ?? [],
                                     quizHistory: cloudData.quiz_history ?? [],
                                     chatSessions: cloudData.chat_sessions ?? [],
+                                    stories: cloudData.stories ?? [],
                                     storyProgress: cloudData.story_progress ?? [],
                                 }
                             });
