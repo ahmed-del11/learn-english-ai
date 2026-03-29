@@ -8,6 +8,7 @@ import Vocabulary from './components/Vocabulary';
 import Shadowing from './components/Shadowing';
 import Quizzes from './components/Quizzes';
 import Progress from './components/Progress';
+import Stories from './components/Stories';
 import Profile from './components/Profile';
 
 const initialState = {
@@ -21,6 +22,7 @@ const initialState = {
     shadowingProgress: JSON.parse(localStorage.getItem('fluentup_shadowing_progress') || '[]'),
     quizHistory: JSON.parse(localStorage.getItem('fluentup_quiz_history') || '[]'),
     chatSessions: JSON.parse(localStorage.getItem('fluentup_chat_sessions') || '[]'),
+    storyProgress: JSON.parse(localStorage.getItem('fluentup_story_progress') || '[]'),
     activeSessionId: localStorage.getItem('fluentup_active_session_id') ? parseInt(localStorage.getItem('fluentup_active_session_id')) : null,
     activeTab: 'home',
     user: JSON.parse(localStorage.getItem('fluentup_user') || 'null'),
@@ -109,6 +111,11 @@ function reducer(state, action) {
         case 'SAVE_QUIZ_RESULT':
             newState.quizHistory = [action.payload, ...state.quizHistory].slice(0, 50);
             break;
+        case 'MARK_STORY_COMPLETE':
+            if (!newState.storyProgress.includes(action.payload)) {
+                newState.storyProgress = [...newState.storyProgress, action.payload];
+            }
+            break;
         case 'CREATE_CHAT_SESSION':
             const newSession = {
                 id: Date.now(),
@@ -152,6 +159,7 @@ function reducer(state, action) {
     localStorage.setItem('fluentup_shadowing_progress', JSON.stringify(newState.shadowingProgress));
     localStorage.setItem('fluentup_quiz_history', JSON.stringify(newState.quizHistory));
     localStorage.setItem('fluentup_chat_sessions', JSON.stringify(newState.chatSessions));
+    localStorage.setItem('fluentup_story_progress', JSON.stringify(newState.storyProgress));
     if (newState.activeSessionId) localStorage.setItem('fluentup_active_session_id', newState.activeSessionId);
     localStorage.setItem('fluentup_user', JSON.stringify(newState.user));
     localStorage.setItem('fluentup_nudge_dismissed', newState.nudgeDismissed);
@@ -171,7 +179,7 @@ export default function App() {
         }, 1500);
         return () => clearTimeout(saveTimerRef.current);
     }, [state.xp, state.streak, state.words, state.sentences,
-    state.shadowingProgress, state.quizHistory, state.chatSessions, state.user]);
+    state.shadowingProgress, state.quizHistory, state.chatSessions, state.storyProgress, state.user]);
 
     useEffect(() => {
         if (state.theme === 'dark') document.documentElement.classList.add('dark');
@@ -212,6 +220,7 @@ export default function App() {
                                     shadowingProgress: cloudData.shadowing_progress ?? [],
                                     quizHistory: cloudData.quiz_history ?? [],
                                     chatSessions: cloudData.chat_sessions ?? [],
+                                    storyProgress: cloudData.story_progress ?? [],
                                 }
                             });
                         }
@@ -247,6 +256,7 @@ export default function App() {
         { id: 'home', icon: Icons.Home, label: t('home') },
         { id: 'vocab', icon: Icons.Book, label: t('vocab') },
         { id: 'shadowing', icon: Icons.Mic, label: t('shadowing') },
+        { id: 'stories', icon: Icons.BookOpen, label: t('stories') },
         { id: 'quizzes', icon: Icons.Brain, label: t('quizzes') },
         { id: 'progress', icon: Icons.TrendingUp, label: t('progress') }
     ];
@@ -313,6 +323,7 @@ export default function App() {
                     {state.activeTab === 'home' && <Home state={state} dispatch={dispatch} t={t} />}
                     {state.activeTab === 'vocab' && <Vocabulary state={state} dispatch={dispatch} t={t} />}
                     {state.activeTab === 'shadowing' && <Shadowing state={state} dispatch={dispatch} t={t} />}
+                    {state.activeTab === 'stories' && <Stories state={state} dispatch={dispatch} t={t} />}
                     {state.activeTab === 'quizzes' && <Quizzes state={state} dispatch={dispatch} t={t} />}
                     {state.activeTab === 'progress' && <Progress state={state} dispatch={dispatch} t={t} />}
                     {state.activeTab === 'profile' && <Profile state={state} dispatch={dispatch} t={t} />}

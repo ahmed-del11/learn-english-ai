@@ -48,6 +48,7 @@ export async function saveToSupabase(userId, state) {
                 shadowing_progress: state.shadowingProgress,
                 quiz_history: state.quizHistory,
                 chat_sessions: state.chatSessions,
+                story_progress: state.storyProgress,
                 updated_at: new Date().toISOString(),
             }, { onConflict: 'id' });
 
