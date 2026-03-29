@@ -28,6 +28,7 @@ const initialState = {
     activeTab: 'home',
     user: JSON.parse(localStorage.getItem('fluentup_user') || 'null'),
     nudgeDismissed: localStorage.getItem('fluentup_nudge_dismissed') === 'true',
+    isSyncing: false,
 };
 
 function reducer(state, action) {
@@ -35,6 +36,7 @@ function reducer(state, action) {
     switch (action.type) {
         case 'LOGIN':
             newState.user = action.payload;
+            newState.isSyncing = true; // Block auto-save until cloud data is fetched
             break;
         case 'LOGOUT':
             newState.user = null;
@@ -118,6 +120,8 @@ function reducer(state, action) {
             }
             break;
         case 'ADD_STORY_TO_LIBRARY':
+            const exists = state.stories.some(s => s.title.toLowerCase() === action.payload.title.toLowerCase());
+            if (exists) return state; // Don't add duplicate stories by title
             newState.stories = [action.payload, ...state.stories];
             break;
         case 'CREATE_CHAT_SESSION':
@@ -151,6 +155,7 @@ function reducer(state, action) {
                 user: state.user, // keep already-set user object
                 activeTab: state.activeTab,
                 nudgeDismissed: state.nudgeDismissed,
+                isSyncing: false, // Initial cloud sync complete
             };
         default:
             return state;
@@ -208,8 +213,17 @@ export default function App() {
             const savedStories = JSON.parse(localStorage.getItem('fluentup_stories') || '[]');
             const initialStories = [...PUBLIC_DOMAIN_STORIES];
             const userStories = Array.isArray(savedStories) ? savedStories.filter(s => !s.isInitial) : [];
-            const mergedStories = [...initialStories, ...userStories];
             
+            // Comprehensive De-Duplication: Use a Map to keep only one version per title (favoring user stories)
+            const storyMap = new Map();
+            initialStories.forEach(s => storyMap.set(s.title.toLowerCase(), s));
+            userStories.forEach(s => storyMap.set(s.title.toLowerCase(), s));
+            
+            const mergedStories = Array.from(storyMap.values());
+            
+            // Cleanup: Save the de-duplicated list back to localStorage immediately
+            localStorage.setItem('fluentup_stories', JSON.stringify(mergedStories));
+
             dispatch({ type: 'HYDRATE', payload: { 
                 stories: mergedStories,
                 words: JSON.parse(localStorage.getItem('fluentup_words') || JSON.stringify(INITIAL_WORDS)),
@@ -222,7 +236,7 @@ export default function App() {
 
     // Auto-save to Supabase (debounced 1.5s) whenever state changes
     useEffect(() => {
-        if (!state.user?.id) return;
+        if (!state.user?.id || state.isSyncing) return; // Safeguard: Never save while syncing initial cloud data
         if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
         saveTimerRef.current = setTimeout(() => {
             saveToSupabase(state.user.id, state);
@@ -274,8 +288,14 @@ export default function App() {
                                     storyProgress: cloudData.story_progress ?? [],
                                 }
                             });
+                        } else {
+                            // If no cloud data exists yet, we are done syncing
+                            dispatch({ type: 'HYDRATE', payload: {} });
                         }
-                    } catch (e) { console.error(e); }
+                    } catch (e) { 
+                        console.error(e); 
+                        dispatch({ type: 'HYDRATE', payload: {} }); // Fail gracefully
+                    }
                 }
             });
         }
